@@ -100,6 +100,10 @@ Transpose_Launcher<Tile_size, local_memory>::_select_transpose_inplace(
   }
 }
 
+/*!
+ * @brief Wrapper around Transpose-Add. Creates the views, then makes and
+ * launches Transpose Add kernel
+ */
 template <bool both_trans, int Tile_size, bool local_memory>
 template <typename sb_handle_t, typename container_0_t, typename container_1_t,
           typename container_2_t, typename element_t, typename index_t>
