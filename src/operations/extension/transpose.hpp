@@ -52,8 +52,9 @@ template <bool in_place, int Tile_size, bool local_memory, typename in_t,
 SYCL_BLAS_INLINE typename in_t::index_t
 Transpose<in_place, Tile_size, local_memory, in_t, out_t, element_t>::get_size()
     const {
-  // Smallest TileSize square-multiple containing input/output matrices
-  return (M_pad_ * N_pad_);
+  // Smallest TileSize square-multiple containing input/output matrices times
+  // batch_size
+  return (M_pad_ * N_pad_ * batch_size_);
 }
 
 template <bool in_place, int Tile_size, bool local_memory, typename in_t,

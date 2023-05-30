@@ -48,7 +48,8 @@ template typename SB_Handle::event_t Transpose_Launcher<
         ${container_t} a_, 
         ${INDEX_TYPE} _ld_in, ${INDEX_TYPE} _inc_in, 
         ${container_t} b_,
-        ${INDEX_TYPE} _ld_out, ${INDEX_TYPE} _inc_out);
+        ${INDEX_TYPE} _ld_out, ${INDEX_TYPE} _inc_out,
+        ${INDEX_TYPE} _batch_size);
 
 }  // namespace internal
 }  // namespace extension

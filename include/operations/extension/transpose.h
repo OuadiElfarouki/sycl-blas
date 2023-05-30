@@ -65,12 +65,18 @@ class Transpose {
   // Increment value (denoted stride in oneMKL specification)
   index_t inc_a_;
   index_t inc_at_;
+  // Stride values (denoted stride in oneMKL specification for batched
+  // operations)
+  index_t stride_a_;
+  index_t stride_at_;
   // Minimum number of tiles used to cover matrices rows & columns
   index_t tile_count_m_;
   index_t tile_count_n_;
   // Minimum number of Tile-mutliple rows & columns to cover the matrices
   index_t M_pad_;
   index_t N_pad_;
+  // Batch size when using batched transpose
+  index_t batch_size_;
 
   Transpose(in_t &A, index_t &inc_a, out_t &At, index_t &inc_at, value_t &alpha)
       : A_(A),
@@ -85,7 +91,25 @@ class Transpose {
         inc_a_(inc_a),
         inc_at_(inc_at),
         M_pad_(tile_count_m_ * Tile_size),
-        N_pad_(tile_count_n_ * Tile_size) {}
+        N_pad_(tile_count_n_ * Tile_size),
+        batch_size_(1) {}
+
+  Transpose(in_t &A, index_t &inc_a, out_t &At, index_t &inc_at, value_t &alpha,
+            index_t &batch_size)
+      : A_(A),
+        At_(At),
+        lda_(A_.getSizeL()),
+        ldat_(At_.getSizeL()),
+        M_(A_.get_size_row()),
+        N_(A_.get_size_col()),
+        alpha_(alpha),
+        tile_count_m_((M_ - 1) / Tile_size + 1),
+        tile_count_n_((N_ - 1) / Tile_size + 1),
+        inc_a_(inc_a),
+        inc_at_(inc_at),
+        M_pad_(tile_count_m_ * Tile_size),
+        N_pad_(tile_count_n_ * Tile_size),
+        batch_size_(batch_size) {}
 
   index_t get_size() const;
 
@@ -108,9 +132,9 @@ template <bool in_place, int Tile_size, bool local_memory, typename in_t,
           typename out_t, typename element_t, typename index_t>
 Transpose<in_place, Tile_size, local_memory, in_t, out_t, element_t>
 make_transpose(in_t &A, index_t inc_a, out_t &At, index_t inc_a_t,
-               element_t &alpha) {
+               element_t &alpha, index_t &batch_size) {
   return Transpose<in_place, Tile_size, local_memory, in_t, out_t, element_t>(
-      A, inc_a, At, inc_a_t, alpha);
+      A, inc_a, At, inc_a_t, alpha, batch_size);
 }
 
 }  // namespace blas
