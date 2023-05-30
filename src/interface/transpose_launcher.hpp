@@ -69,37 +69,6 @@ Transpose_Launcher<Tile_size, local_memory>::_select_transpose_outplace(
   }
 }
 
-template <int Tile_size, bool local_memory>
-template <typename sb_handle_t, typename container_0_t, typename container_1_t,
-          typename element_t, typename index_t>
-typename sb_handle_t::event_t
-Transpose_Launcher<Tile_size, local_memory>::_select_transpose_inplace(
-    sb_handle_t& sb_handle, index_t _M, index_t _N, element_t _alpha,
-    container_0_t in_, index_t _ld_in, container_1_t out_, index_t _ld_out) {
-  // Matrix Views
-  auto in_view = make_matrix_view<col_major>(in_, _M, _N, _ld_in, (index_t)1);
-  auto out_view =
-      make_matrix_view<col_major>(out_, _M, _N, _ld_out, (index_t)1);
-
-  // Work items & groups sizes
-  index_t local_size = static_cast<index_t>(Tile_size * Tile_size);
-  index_t n_wg = ((_M - 1) / Tile_size + 1) * ((_N - 1) / Tile_size + 1);
-  index_t global_size = n_wg * local_size;
-
-  // Transpose expression Tree
-  auto trans_scale_tree = make_transpose<true, Tile_size, local_memory>(
-      in_view, (index_t)1, out_view, (index_t)1, _alpha);
-
-  if constexpr (local_memory) {
-    index_t shared_mem = static_cast<index_t>((Tile_size + 1) * Tile_size) *
-                         ((index_t)local_memory);
-    return sb_handle.execute(trans_scale_tree, local_size, global_size,
-                             shared_mem);
-  } else {
-    return sb_handle.execute(trans_scale_tree, local_size, global_size);
-  }
-}
-
 /*!
  * @brief Wrapper around Transpose-Add. Creates the views, then makes and
  * launches Transpose Add kernel
