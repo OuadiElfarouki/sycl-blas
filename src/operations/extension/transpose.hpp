@@ -69,16 +69,18 @@ template <bool in_place, int Tile_size, bool local_memory, typename in_t,
           typename out_t, typename element_t>
 SYCL_BLAS_INLINE void Transpose<in_place, Tile_size, local_memory, in_t, out_t,
                                 element_t>::eval(cl::sycl::nd_item<1> id) {
-  auto idx = id.get_global_linear_id();
+  index_t idx = id.get_global_linear_id();
 
-  auto j = idx / M_pad_;
-  auto i = idx - j * M_pad_;
+  const index_t ibatch = (batch_size_ == index_t(1)) ? 0 : idx / size_pad_;
+
+  const index_t j = (idx - ibatch * size_pad_) / M_pad_;
+  const index_t i = (idx - ibatch * size_pad_) - j * M_pad_;
 
   if (i < M_ && j < N_) {
     auto A = A_.get_data().get_pointer();
     auto At = At_.get_data().get_pointer();
-    auto in_index = i * inc_a_ + j * lda_;
-    auto out_index = i * ldat_ + j * inc_at_;
+    index_t in_index = i * inc_a_ + j * lda_ + ibatch * stride_a_;
+    index_t out_index = i * ldat_ + j * inc_at_ + ibatch * stride_at_;
     At[out_index] = alpha_ * A[in_index];
   }
 }
@@ -111,8 +113,13 @@ SYCL_BLAS_INLINE void Transpose<in_place, Tile_size, local_memory, in_t, out_t,
   index_t idg = id.get_group(0);
   index_t idc = id.get_local_id(0);
 
-  const index_t jg = idg / tile_count_m_;
-  const index_t ig = idg - jg * tile_count_m_;
+  const index_t ibatch =
+      (batch_size_ == index_t(1)) ? 0 : idg / tile_count_total_;
+
+  const index_t relative_idg = idg - ibatch * tile_count_total_;
+
+  const index_t jg = relative_idg / tile_count_m_;
+  const index_t ig = relative_idg - jg * tile_count_m_;
 
   const index_t jl = idc / Tile_size;
   const index_t il = idc - jl * Tile_size;
@@ -123,12 +130,13 @@ SYCL_BLAS_INLINE void Transpose<in_place, Tile_size, local_memory, in_t, out_t,
   valid_index_in = (i_block_start + il < M_ && j_block_start + jl < N_);
   valid_index_out = (i_block_start + jl < M_ && j_block_start + il < N_);
 
-  in_idx =
-      i_block_start * inc_a_ + j_block_start * lda_ + il * inc_a_ + jl * lda_;
+  in_idx = i_block_start * inc_a_ + j_block_start * lda_ + il * inc_a_ +
+           jl * lda_ + ibatch * stride_a_;
+
   in_local_idx = jl * (Tile_size + 1) + il;
 
   out_idx = i_block_start * ldat_ + j_block_start * inc_at_ + il * inc_at_ +
-            jl * ldat_;
+            jl * ldat_ + ibatch * stride_at_;
   out_local_idx = il * (Tile_size + 1) + jl;
 }
 
