@@ -220,7 +220,7 @@ typename sb_handle_t::event_t _matcopy(sb_handle_t& sb_handle, char trans,
     return ret;
   }
 
-  const index_t stride = 0;
+  const index_t stride = 1;
   const index_t batch_size = 1;
 
   if (trans == 't') {
@@ -271,11 +271,13 @@ typename sb_handle_t::event_t _transpose(sb_handle_t& sb_handle, index_t m,
     return ret;
   }
 
-  const index_t inc = index_t(1);
-  const element_t alpha = element_t(1);
+  const index_t inc = 1;
+  const index_t stride = 1;
+  const index_t batch_size = 1;
 
-  return _matcopy_impl<in_place, true>(sb_handle, m, n, alpha, A, ld_a, inc, B,
-                                       ld_b, inc);
+  return _matcopy_impl<in_place, true>(sb_handle, m, n, (float)1.0, A, ld_a,
+                                       inc, stride, B, ld_b, inc, stride,
+                                       batch_size);
 }
 
 template <typename operator_t, typename element_t, typename sb_handle_t,
