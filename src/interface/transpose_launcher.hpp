@@ -45,7 +45,7 @@ Transpose_Launcher<Tile_size, local_memory>::_select_transpose_outplace(
     sb_handle_t& sb_handle, index_t _M, index_t _N, element_t _alpha,
     container_0_t in_, index_t _ld_in, index_t _inc_in, index_t _stride_in,
     container_1_t out_, index_t _ld_out, index_t _inc_out, index_t _stride_out,
-    index_t batch_size) {
+    index_t _batch_size) {
   // Matrix Views
   auto in_view = make_matrix_view<col_major>(in_, _M, _N, _ld_in, index_t(1));
   auto out_view =
@@ -54,12 +54,12 @@ Transpose_Launcher<Tile_size, local_memory>::_select_transpose_outplace(
   // Work items & groups sizes
   index_t local_size = static_cast<index_t>(Tile_size * Tile_size);
   index_t n_wg = ((_M - 1) / Tile_size + 1) * ((_N - 1) / Tile_size + 1);
-  index_t global_size = n_wg * local_size * batch_size;
+  index_t global_size = n_wg * local_size * _batch_size;
 
   // Transpose expression Tree
   auto trans_scale_tree = make_transpose<false, Tile_size, local_memory>(
       in_view, _inc_in, _stride_in, out_view, _inc_out, _stride_out, _alpha,
-      batch_size);
+      _batch_size);
 
   if constexpr (local_memory) {
     index_t local_mem = static_cast<index_t>((Tile_size + 1) * Tile_size) *
