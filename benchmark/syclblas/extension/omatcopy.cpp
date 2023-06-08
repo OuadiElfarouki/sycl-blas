@@ -38,7 +38,7 @@ std::string get_name(std::string t, int m, int n, scalar_t alpha,
 
 template <typename scalar_t>
 void run(benchmark::State& state, blas::SB_Handle* sb_handle_ptr, int ti,
-         index_t m, index_t n, index_t lda_mul, index_t ldb_mul, scalar_t alpha,
+         index_t m, index_t n, scalar_t alpha, index_t lda_mul, index_t ldb_mul,
          bool* success) {
   // Standard test setup.
   std::string ts = blas_benchmark::utils::from_transpose_enum(
@@ -46,23 +46,31 @@ void run(benchmark::State& state, blas::SB_Handle* sb_handle_ptr, int ti,
   const char* t_str = ts.c_str();
 
   const auto lda = lda_mul * m;
-  const auto ldb = ldb_mul * m;
+  const auto ldb = (*t_str == 't') ? ldb_mul * n : ldb_mul * m;
+
+  const auto size_a = lda * n;
+  const auto size_b = ldb * ((*t_str == 't') ? m : n);
 
   blas_benchmark::utils::init_level_1_counters<
       blas_benchmark::utils::Level1Op::copy, scalar_t>(state, 2 * m * n);
 
-  state.counters["n_fl_ops"] = 2 * static_cast<double>(m * n);
+  state.counters["n_fl_ops"] = (double)2 * static_cast<double>(m * n);
+  state.counters["lda_m"] = (double)lda_mul;
+  state.counters["ldb_m"] = (double)ldb_mul;
+  state.counters["trans"] = (double)((*t_str == 't') ? 1 : 0);
+  state.counters["m"] = (double)m;
+  state.counters["n"] = (double)n;
 
   blas::SB_Handle& sb_handle = *sb_handle_ptr;
 
   // Input matrix/vector, output vector.
   std::vector<scalar_t> m_a =
-      blas_benchmark::utils::random_data<scalar_t>(lda * n);
+      blas_benchmark::utils::random_data<scalar_t>(size_a);
   std::vector<scalar_t> m_b =
-      blas_benchmark::utils::random_data<scalar_t>(ldb * n);
+      blas_benchmark::utils::random_data<scalar_t>(size_b);
 
-  auto m_a_gpu = blas::make_sycl_iterator_buffer<scalar_t>(m_a, lda * n);
-  auto m_b_gpu = blas::make_sycl_iterator_buffer(m_b, ldb * n);
+  auto m_a_gpu = blas::make_sycl_iterator_buffer<scalar_t>(m_a, size_a);
+  auto m_b_gpu = blas::make_sycl_iterator_buffer(m_b, size_b);
 
 #ifdef BLAS_VERIFY_BENCHMARK
   // Run a first time with a verification of the results
@@ -72,7 +80,7 @@ void run(benchmark::State& state, blas::SB_Handle* sb_handle_ptr, int ti,
   std::vector<scalar_t> m_b_temp = m_b;
   {
     auto m_b_temp_gpu =
-        blas::make_sycl_iterator_buffer<scalar_t>(m_b_temp, ldb * n);
+        blas::make_sycl_iterator_buffer<scalar_t>(m_b_temp, size_b);
 
     auto event = blas::extension::_omatcopy(sb_handle, *t_str, m, n, alpha,
                                             m_a_gpu, lda, m_b_temp_gpu, ldb);

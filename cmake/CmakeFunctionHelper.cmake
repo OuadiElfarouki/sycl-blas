@@ -535,6 +535,7 @@ function(add_transpose_configuration
                 ${container_t}
                 ${index}
                 ${tile_size}
+                128
                 ${local_memory}
                 ${file_name}
               MAIN_DEPENDENCY ${SYCLBLAS_SRC}/interface/${blas_level}/${func}.cpp.in

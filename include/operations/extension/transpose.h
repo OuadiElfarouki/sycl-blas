@@ -48,8 +48,8 @@ namespace blas {
  * @tparam element_t The scaling factor type
  *
  */
-template <bool in_place, int Tile_size, bool local_memory, typename in_t,
-          typename out_t, typename element_t>
+template <bool in_place, int Tile_size, int wg_size, bool local_memory,
+          typename in_t, typename out_t, typename element_t>
 class Transpose {
  public:
   using index_t = typename in_t::index_t;
@@ -74,6 +74,8 @@ class Transpose {
   index_t tile_count_n_;
   // Total number of tiles used to cover the matrix
   index_t tile_count_total_;
+  // Number of Inner WG Tiles
+  static constexpr const index_t inner_tile_count_ = wg_size / Tile_size;
   // Minimum number of Tile-mutliple rows & columns to cover the matrices
   index_t M_pad_;
   index_t N_pad_;
@@ -121,14 +123,15 @@ class Transpose {
 /*!
  @brief Generator/factory for Transpose trees.
  */
-template <bool in_place, int Tile_size, bool local_memory, typename in_t,
-          typename out_t, typename element_t, typename index_t>
-Transpose<in_place, Tile_size, local_memory, in_t, out_t, element_t>
+template <bool in_place, int Tile_size, int wg_size, bool local_memory,
+          typename in_t, typename out_t, typename element_t, typename index_t>
+Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t, element_t>
 make_transpose(in_t &A, index_t inc_a, index_t &stride_a, out_t &At,
                index_t inc_a_t, index_t &stride_at, element_t &alpha,
                index_t &batch_size) {
-  return Transpose<in_place, Tile_size, local_memory, in_t, out_t, element_t>(
-      A, inc_a, stride_a, At, inc_a_t, stride_at, alpha, batch_size);
+  return Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
+                   element_t>(A, inc_a, stride_a, At, inc_a_t, stride_at, alpha,
+                              batch_size);
 }
 
 }  // namespace blas
