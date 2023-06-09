@@ -75,7 +75,9 @@ class Transpose {
   // Total number of tiles used to cover the matrix
   index_t tile_count_total_;
   // Number of Inner WG Tiles
-  static constexpr const index_t inner_tile_count_ = wg_size / Tile_size;
+  static constexpr const index_t inner_tile_size_ = wg_size / Tile_size;
+  static constexpr const index_t inner_tile_count_ =
+      Tile_size / inner_tile_size_;
   // Minimum number of Tile-mutliple rows & columns to cover the matrices
   index_t M_pad_;
   index_t N_pad_;

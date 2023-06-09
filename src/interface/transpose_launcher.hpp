@@ -54,9 +54,8 @@ Transpose_Launcher<Tile_size, wg_size, local_memory>::
       make_matrix_view<col_major>(out_, _M, _N, _ld_out, index_t(1));
 
   // Work items & groups sizes
-  index_t local_size = static_cast<index_t>(Tile_size * Tile_size);
   index_t n_wg = ((_M - 1) / Tile_size + 1) * ((_N - 1) / Tile_size + 1);
-  index_t global_size = n_wg * local_size * _batch_size;
+  index_t global_size = n_wg * wg_size * _batch_size;
 
   // Transpose expression Tree
   auto trans_scale_tree =
@@ -67,10 +66,9 @@ Transpose_Launcher<Tile_size, wg_size, local_memory>::
   if constexpr (local_memory) {
     index_t local_mem = static_cast<index_t>((Tile_size + 1) * Tile_size) *
                         ((index_t)local_memory);
-    return sb_handle.execute(trans_scale_tree, local_size, global_size,
-                             local_mem);
+    return sb_handle.execute(trans_scale_tree, wg_size, global_size, local_mem);
   } else {
-    return sb_handle.execute(trans_scale_tree, local_size, global_size);
+    return sb_handle.execute(trans_scale_tree, wg_size, global_size);
   }
 }
 

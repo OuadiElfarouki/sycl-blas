@@ -158,15 +158,21 @@ Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
     get_indices(id, in_index, in_local_id, out_index, out_local_id,
                 valid_index_in, valid_index_out);
 
-    // Copy input to local memory
-    if (valid_index_in) {
-      local[in_local_id] = alpha_ * A[in_index];
+    for (index_t l = 0; l < inner_tile_count_; l++) {
+      // Copy input to local memory
+      if (valid_index_in) {
+        local[in_local_id + l * inner_tile_size_ * (Tile_size + 1)] =
+            alpha_ * A[in_index + l * inner_tile_size_ * lda_];
+      }
     }
     id.barrier(cl::sycl::access::fence_space::local_space);
 
-    // Copy output from local memory
-    if (valid_index_out) {
-      At[out_index] = local[out_local_id];
+    for (index_t l = 0; l < inner_tile_count_; l++) {
+      // Copy output from local memory
+      if (valid_index_out) {
+        At[out_index + l * inner_tile_size_ * ldat_] =
+            local[out_local_id + l * inner_tile_size_];
+      }
     }
   }
 }
