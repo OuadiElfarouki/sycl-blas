@@ -515,6 +515,8 @@ set(trans_sources "")
 
 function(add_transpose_configuration
   tile_size
+  wg_size
+  cl_size
 )
   foreach(data ${data_list})
     cpp_type(cpp_data ${data})
@@ -522,7 +524,7 @@ function(add_transpose_configuration
     foreach(container_t ${container_list})
       foreach(local_memory ${boolean_list})    
           foreach(index ${index_list})
-            set(file_name "transpose_launcher_${tile_size}_${local_memory}.cpp")
+            set(file_name "transpose_launcher_${tile_size}_${wg_size}_${cl_size}_${local_memory}.cpp")
             sanitize_file_name(file_name "${file_name}")
             add_custom_command(OUTPUT "${LOCATION}/${file_name}"
               COMMAND ${PYTHON_EXECUTABLE} ${SYCLBLAS_SRC_GENERATOR}/py_gen_blas_transpose_launcher.py
@@ -535,7 +537,8 @@ function(add_transpose_configuration
                 ${container_t}
                 ${index}
                 ${tile_size}
-                128
+                ${wg_size}
+                ${cl_size}
                 ${local_memory}
                 ${file_name}
               MAIN_DEPENDENCY ${SYCLBLAS_SRC}/interface/${blas_level}/${func}.cpp.in
@@ -551,9 +554,12 @@ function(add_transpose_configuration
   endforeach(data)
 endfunction(add_transpose_configuration)
 
-add_transpose_configuration(8 1)
-add_transpose_configuration(16 1)
-add_transpose_configuration(32 1)
+add_transpose_configuration(16 64 128)
+add_transpose_configuration(16 128 128)
+
+add_transpose_configuration(32 128 128)
+add_transpose_configuration(32 256 128)
+add_transpose_configuration(32 512 128)
 
 add_library(${func} OBJECT ${trans_sources})
 set_target_compile_def(${func})

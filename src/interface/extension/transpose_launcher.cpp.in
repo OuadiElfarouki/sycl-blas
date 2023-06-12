@@ -33,10 +33,10 @@
 namespace blas {
 namespace extension {
 namespace internal {
-template class Transpose_Launcher<${TILE_SIZE}, ${WG_SIZE}, ${LOCAL_MEM}>;
+template class Transpose_Launcher<${TILE_SIZE}, ${WG_SIZE}, ${CL_SIZE}, ${LOCAL_MEM}>;
 
 template typename SB_Handle::event_t Transpose_Launcher<
-    ${TILE_SIZE}, ${WG_SIZE}, ${LOCAL_MEM}>::
+    ${TILE_SIZE}, ${WG_SIZE}, ${CL_SIZE}, ${LOCAL_MEM}>::
     _select_transpose_outplace<SB_Handle,
                  ${container_t},
                  ${container_t},

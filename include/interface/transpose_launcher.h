@@ -36,7 +36,7 @@ namespace internal {
  * @brief Wrapper around Transpose (in & out place). Creates the views, then
  * makes and launches Transpose
  */
-template <int Tile_size, int wg_size, bool local_memory>
+template <int Tile_size, int wg_size, int cl_size, bool local_memory>
 struct Transpose_Launcher {
   template <typename sb_handle_t, typename container_0_t,
             typename container_1_t, typename element_t, typename index_t>

@@ -30,47 +30,47 @@
 namespace blas {
 
 // Transpose
-template <bool in_place, int Tile_size, int wg_size, bool local_memory,
-          typename in_t, typename out_t, typename element_t>
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t>
 SYCL_BLAS_INLINE bool
-Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
+Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::valid_thread(cl::sycl::nd_item<1> item) const {
   // Valid threads are established by ::eval()
   return true;
 }
 
-template <bool in_place, int Tile_size, int wg_size, bool local_memory,
-          typename in_t, typename out_t, typename element_t>
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t>
 SYCL_BLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
+Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::bind(cl::sycl::handler &cgh) {
   A_.bind(cgh);
   At_.bind(cgh);
 }
 
-template <bool in_place, int Tile_size, int wg_size, bool local_memory,
-          typename in_t, typename out_t, typename element_t>
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t>
 SYCL_BLAS_INLINE typename in_t::index_t
-Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
+Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::get_size() const {
   // Smallest TileSize square-multiple containing input/output matrices times
   // batch_size
   return (M_pad_ * N_pad_ * batch_size_);
 }
 
-template <bool in_place, int Tile_size, int wg_size, bool local_memory,
-          typename in_t, typename out_t, typename element_t>
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t>
 SYCL_BLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
+Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::adjust_access_displacement() {
   A_.adjust_access_displacement();
   At_.adjust_access_displacement();
 }
 
-template <bool in_place, int Tile_size, int wg_size, bool local_memory,
-          typename in_t, typename out_t, typename element_t>
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t>
 SYCL_BLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
+Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::eval(cl::sycl::nd_item<1> id) {
   index_t idx = id.get_global_linear_id();
 
@@ -103,10 +103,10 @@ Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
  *outpu range
  *
  */
-template <bool in_place, int Tile_size, int wg_size, bool local_memory,
-          typename in_t, typename out_t, typename element_t>
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t>
 SYCL_BLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
+Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::get_indices(cl::sycl::nd_item<1> id, index_t &in_idx,
                                   index_t &in_local_idx, index_t &out_idx,
                                   index_t &out_local_idx, bool &valid_index_in,
@@ -141,11 +141,11 @@ Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
   out_local_idx = il * (Tile_size + 1) + jl;
 }
 
-template <bool in_place, int Tile_size, int wg_size, bool local_memory,
-          typename in_t, typename out_t, typename element_t>
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t>
 template <typename local_memory_t>
 SYCL_BLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
+Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::eval(local_memory_t local_mem, cl::sycl::nd_item<1> id) {
   index_t idx = id.get_global_linear_id();
 

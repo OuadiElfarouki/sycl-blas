@@ -42,14 +42,16 @@ namespace blas {
  * @tparam in_place Whether the transpose is in or out of place
  * @tparam Tile_size Tiling size used explicitly in the local memory kernel, and
  * used to compute work-group size in the non-local memory case.
+ * @tparam wg_size work group size
+ * @tparam cl_size cache line size
  * @tparam local_memory Whether to use local memory
  * @tparam in_t The input matrix type
  * @tparam out_t The output matrix type
  * @tparam element_t The scaling factor type
  *
  */
-template <bool in_place, int Tile_size, int wg_size, bool local_memory,
-          typename in_t, typename out_t, typename element_t>
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t>
 class Transpose {
  public:
   using index_t = typename in_t::index_t;
@@ -125,15 +127,17 @@ class Transpose {
 /*!
  @brief Generator/factory for Transpose trees.
  */
-template <bool in_place, int Tile_size, int wg_size, bool local_memory,
-          typename in_t, typename out_t, typename element_t, typename index_t>
-Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t, element_t>
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t,
+          typename index_t>
+Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
+          element_t>
 make_transpose(in_t &A, index_t inc_a, index_t &stride_a, out_t &At,
                index_t inc_a_t, index_t &stride_at, element_t &alpha,
                index_t &batch_size) {
-  return Transpose<in_place, Tile_size, wg_size, local_memory, in_t, out_t,
-                   element_t>(A, inc_a, stride_a, At, inc_a_t, stride_at, alpha,
-                              batch_size);
+  return Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t,
+                   out_t, element_t>(A, inc_a, stride_a, At, inc_a_t, stride_at,
+                                     alpha, batch_size);
 }
 
 }  // namespace blas

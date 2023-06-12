@@ -37,11 +37,11 @@ namespace internal {
  * @brief Wrapper around Transpose. Creates the views, then makes and launches
  * Transpose
  */
-template <int Tile_size, int wg_size, bool local_memory>
+template <int Tile_size, int wg_size, int cl_size, bool local_memory>
 template <typename sb_handle_t, typename container_0_t, typename container_1_t,
           typename element_t, typename index_t>
 typename sb_handle_t::event_t
-Transpose_Launcher<Tile_size, wg_size, local_memory>::
+Transpose_Launcher<Tile_size, wg_size, cl_size, local_memory>::
     _select_transpose_outplace(sb_handle_t& sb_handle, index_t _M, index_t _N,
                                element_t _alpha, container_0_t in_,
                                index_t _ld_in, index_t _inc_in,
@@ -59,7 +59,7 @@ Transpose_Launcher<Tile_size, wg_size, local_memory>::
 
   // Transpose expression Tree
   auto trans_scale_tree =
-      make_transpose<false, Tile_size, wg_size, local_memory>(
+      make_transpose<false, Tile_size, wg_size, cl_size, local_memory>(
           in_view, _inc_in, _stride_in, out_view, _inc_out, _stride_out, _alpha,
           _batch_size);
 

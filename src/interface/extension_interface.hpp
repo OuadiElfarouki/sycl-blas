@@ -66,25 +66,16 @@ _matcopy_impl(sb_handle_t& sb_handle, index_t m, index_t n, element_t alpha,
 
   if (use_local_memory) {
     // Using local Memory
-    // if (m > 1024 && n > 1024) {
-    //   ret = Transpose_Launcher<32, true>::template
-    //   _select_transpose_outplace(
-    //       sb_handle, m, n, alpha, in_memory, ld_in, inc_in, stride_in,
-    //       out_memory, ld_out, inc_out, stride_out, batch_size);
-    // } else if (m > 64 && n > 64) {
-    ret =
-        Transpose_Launcher<32, 128, true>::template _select_transpose_outplace(
+
+    ret = Transpose_Launcher<32, 512, 128, true>::
+        template _select_transpose_outplace(
             sb_handle, m, n, alpha, in_memory, ld_in, inc_in, stride_in,
             out_memory, ld_out, inc_out, stride_out, batch_size);
-    // } else {
-    //   ret = Transpose_Launcher<8, true>::template _select_transpose_outplace(
-    //       sb_handle, m, n, alpha, in_memory, ld_in, inc_in, stride_in,
-    //       out_memory, ld_out, inc_out, stride_out, batch_size);
-    // }
+
   } else {
     // With no local Memory
-    ret =
-        Transpose_Launcher<16, 128, false>::template _select_transpose_outplace(
+    ret = Transpose_Launcher<16, 128, 128, false>::
+        template _select_transpose_outplace(
             sb_handle, m, n, alpha, in_memory, ld_in, inc_in, stride_in,
             out_memory, ld_out, inc_out, stride_out, batch_size);
   }

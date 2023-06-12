@@ -43,8 +43,9 @@ if __name__ == '__main__':
     index = sys.argv[8]
     tile_size = sys.argv[9]
     wg_size = sys.argv[10]
-    local_memory = sys.argv[11]
-    file_name = sys.argv[12]
+    cl_size = sys.argv[11]
+    local_memory = sys.argv[12]
+    file_name = sys.argv[13]
 
     source = 'generated_src/' + blas_level_name + '/' + blas_function_name + '/'
     try:
@@ -74,6 +75,11 @@ if __name__ == '__main__':
         Iterable(
             key='WG_SIZE',
             vals=[wg_size],
+            itermode=Itermode.combinations,
+            iter_modifier=1),
+        Iterable(
+            key='CL_SIZE',
+            vals=[cl_size],
             itermode=Itermode.combinations,
             iter_modifier=1),
         Iterable(
