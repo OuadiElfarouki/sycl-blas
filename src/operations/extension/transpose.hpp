@@ -56,7 +56,7 @@ Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::get_size() const {
   // Smallest TileSize square-multiple containing input/output matrices times
   // batch_size
-  return (M_pad_ * N_pad_ * batch_size_);
+  return (size_pad_ * batch_size_);
 }
 
 template <bool in_place, int Tile_size, int wg_size, int cl_size,
@@ -72,20 +72,58 @@ template <bool in_place, int Tile_size, int wg_size, int cl_size,
           bool local_memory, typename in_t, typename out_t, typename element_t>
 SYCL_BLAS_INLINE void
 Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
+          element_t>::get_indices(cl::sycl::nd_item<1> id, index_t &in_idx,
+                                  index_t &out_idx, index_t &i, index_t &j) {
+  index_t idg = id.get_group(0);
+  index_t idc = id.get_local_id(0);
+
+  const index_t ibatch =
+      (batch_size_ == index_t(1)) ? 0 : idg / tile_count_total_;
+
+  const index_t relative_idg = idg - ibatch * tile_count_total_;
+
+  const index_t jg = relative_idg / tile_count_m_;
+  const index_t ig = relative_idg - jg * tile_count_m_;
+
+  const index_t jl = idc / Tile_size;
+  const index_t il = idc - jl * Tile_size;
+
+  const index_t i_block_start = ig * Tile_size;
+  const index_t j_block_start = jg * Tile_size;
+
+  i = (i_block_start + il) * inc_a_;
+  j = (j_block_start + jl) * inc_at_;
+
+  in_idx = i_block_start * inc_a_ + j_block_start * lda_ + il * inc_a_ +
+           jl * lda_ + ibatch * stride_a_;
+
+  out_idx = i_block_start * ldat_ + j_block_start * inc_at_ + jl * inc_at_ +
+            il * ldat_ + ibatch * stride_at_;
+}
+
+template <bool in_place, int Tile_size, int wg_size, int cl_size,
+          bool local_memory, typename in_t, typename out_t, typename element_t>
+SYCL_BLAS_INLINE void
+Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::eval(cl::sycl::nd_item<1> id) {
   index_t idx = id.get_global_linear_id();
 
   const index_t ibatch = (batch_size_ == index_t(1)) ? 0 : idx / size_pad_;
 
-  const index_t j = (idx - ibatch * size_pad_) / M_pad_;
-  const index_t i = (idx - ibatch * size_pad_) - j * M_pad_;
+  index_t in_index, out_index, i_id, j_id;
 
-  if (i < M_ && j < N_) {
+  get_indices(id, in_index, out_index, i_id, j_id);
+
+  if (i_id < ((M_ - 1) * inc_a_ + 1)) {
     auto A = A_.get_data().get_pointer();
     auto At = At_.get_data().get_pointer();
-    index_t in_index = i * inc_a_ + j * lda_ + ibatch * stride_a_;
-    index_t out_index = i * ldat_ + j * inc_at_ + ibatch * stride_at_;
-    At[out_index] = alpha_ * A[in_index];
+    for (index_t l = 0; l < inner_tile_count_; l++) {
+      if (j_id + l * inner_tile_size_ * inc_at_ < ((N_ - 1) * inc_at_ + 1)) {
+        At[out_index + l * inner_tile_size_ * inc_at_ + ibatch * stride_a_] =
+            alpha_ *
+            A[in_index + l * inner_tile_size_ * lda_ + ibatch * stride_at_];
+      }
+    }
   }
 }
 
