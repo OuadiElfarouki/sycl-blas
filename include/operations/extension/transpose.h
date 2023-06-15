@@ -87,6 +87,13 @@ class Transpose {
   index_t size_pad_;
   // Batch size when using batched transpose
   index_t batch_size_;
+  // The number of elements per cache line size depends on the element type
+  static constexpr index_t get_num_cache_line_elems() {
+    return cl_size / sizeof(element_t);
+  }
+  static constexpr index_t get_num_tiles_per_cache_line() {
+    return get_num_cache_line_elems() / Tile_size;
+  }
 
   Transpose(in_t &A, index_t &inc_a, index_t &stride_a, out_t &At,
             index_t &inc_at, index_t &stride_at, value_t &alpha,
@@ -120,8 +127,8 @@ class Transpose {
   void eval(local_memory_t local_mem, cl::sycl::nd_item<1> id);
   void get_indices(cl::sycl::nd_item<1> id, index_t &in_idx,
                    index_t &in_local_idx, index_t &out_idx,
-                   index_t &out_local_idx, bool &valid_index_in,
-                   bool &valid_index_out);
+                   index_t &out_local_idx, index_t &i_block_start,
+                   index_t &j_block_start, index_t &il, index_t &jl);
 };
 
 /*!

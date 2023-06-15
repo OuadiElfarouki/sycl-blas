@@ -32,7 +32,6 @@
 
 namespace blas {
 namespace extension {
-namespace internal {
 template class Transpose_Launcher<${TILE_SIZE}, ${WG_SIZE}, ${CL_SIZE}, ${LOCAL_MEM}>;
 
 template typename SB_Handle::event_t Transpose_Launcher<
@@ -53,6 +52,5 @@ template typename SB_Handle::event_t Transpose_Launcher<
         ${INDEX_TYPE} _stride_out,
         ${INDEX_TYPE} _batch_size);
 
-}  // namespace internal
 }  // namespace extension
 }  // namespace blas

@@ -36,7 +36,8 @@ SYCL_BLAS_INLINE bool
 Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::valid_thread(cl::sycl::nd_item<1> item) const {
   // Valid threads are established by ::eval()
-  return true;
+  index_t idx = item.get_global_linear_id();
+  return (idx < get_size());
 }
 
 template <bool in_place, int Tile_size, int wg_size, int cl_size,
@@ -109,8 +110,10 @@ SYCL_BLAS_INLINE void
 Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::get_indices(cl::sycl::nd_item<1> id, index_t &in_idx,
                                   index_t &in_local_idx, index_t &out_idx,
-                                  index_t &out_local_idx, bool &valid_index_in,
-                                  bool &valid_index_out) {
+                                  index_t &out_local_idx,
+                                  index_t &i_block_start,
+                                  index_t &j_block_start, index_t &il,
+                                  index_t &jl) {
   index_t idg = id.get_group(0);
   index_t idc = id.get_local_id(0);
 
@@ -122,23 +125,23 @@ Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
   const index_t jg = relative_idg / tile_count_m_;
   const index_t ig = relative_idg - jg * tile_count_m_;
 
-  const index_t jl = idc / Tile_size;
-  const index_t il = idc - jl * Tile_size;
+  jl = idc / Tile_size;
+  il = idc - jl * Tile_size;
 
-  const index_t i_block_start = ig * Tile_size;
-  const index_t j_block_start = jg * Tile_size;
-
-  valid_index_in = (i_block_start + il < M_ && j_block_start + jl < N_);
-  valid_index_out = (i_block_start + jl < M_ && j_block_start + il < N_);
+  i_block_start = ig * Tile_size;
+  j_block_start = jg * Tile_size;
 
   in_idx = i_block_start * inc_a_ + j_block_start * lda_ + il * inc_a_ +
            jl * lda_ + ibatch * stride_a_;
 
-  in_local_idx = jl * (Tile_size + 1) + il;
+  index_t jl_cl = idc / get_num_cache_line_elems();
+  index_t il_cl = idc - jl_cl * get_num_cache_line_elems();
+
+  in_local_idx = jl_cl * (get_num_cache_line_elems() + 1) + il_cl;
 
   out_idx = i_block_start * ldat_ + j_block_start * inc_at_ + il * inc_at_ +
             jl * ldat_ + ibatch * stride_at_;
-  out_local_idx = il * (Tile_size + 1) + jl;
+  out_local_idx = il * Tile_size + jl + il / get_num_tiles_per_cache_line();
 }
 
 template <bool in_place, int Tile_size, int wg_size, int cl_size,
@@ -147,29 +150,31 @@ template <typename local_memory_t>
 SYCL_BLAS_INLINE void
 Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
           element_t>::eval(local_memory_t local_mem, cl::sycl::nd_item<1> id) {
-  index_t idx = id.get_global_linear_id();
+  value_t *local = local_mem.localAcc.get_pointer();
+  auto A = A_.get_data().get_pointer();
+  auto At = At_.get_data().get_pointer();
+  index_t in_index, in_local_id, out_index, out_local_id, il, jl;
+  index_t i_block_start, j_block_start;
+  get_indices(id, in_index, in_local_id, out_index, out_local_id, i_block_start,
+              j_block_start, il, jl);
 
-  if (idx < get_size()) {
-    value_t *local = local_mem.localAcc.get_pointer();
-    auto A = A_.get_data().get_pointer();
-    auto At = At_.get_data().get_pointer();
-    index_t in_index, in_local_id, out_index, out_local_id;
-    bool valid_index_in, valid_index_out;
-    get_indices(id, in_index, in_local_id, out_index, out_local_id,
-                valid_index_in, valid_index_out);
-
+  if (i_block_start + il < M_) {
     for (index_t l = 0; l < inner_tile_count_; l++) {
       // Copy input to local memory
-      if (valid_index_in) {
-        local[in_local_id + l * inner_tile_size_ * (Tile_size + 1)] =
+      if (j_block_start + jl + l * inner_tile_size_ < N_) {
+        local[in_local_id +
+              l * (get_num_cache_line_elems() + 1) *
+                  (inner_tile_size_ / get_num_tiles_per_cache_line())] =
             alpha_ * A[in_index + l * inner_tile_size_ * lda_];
       }
     }
-    id.barrier(cl::sycl::access::fence_space::local_space);
+  }
+  id.barrier(cl::sycl::access::fence_space::local_space);
 
+  if (j_block_start + il < N_) {
     for (index_t l = 0; l < inner_tile_count_; l++) {
       // Copy output from local memory
-      if (valid_index_out) {
+      if (i_block_start + jl + l * inner_tile_size_ < M_) {
         At[out_index + l * inner_tile_size_ * ldat_] =
             local[out_local_id + l * inner_tile_size_];
       }

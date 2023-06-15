@@ -31,7 +31,6 @@
 
 namespace blas {
 namespace extension {
-namespace internal {
 /*!
  * @brief Wrapper around Transpose (in & out place). Creates the views, then
  * makes and launches Transpose
@@ -47,7 +46,6 @@ struct Transpose_Launcher {
       index_t _stride_out, index_t _batch_size);
 };
 
-}  // namespace internal
 }  // namespace extension
 }  // namespace blas
 

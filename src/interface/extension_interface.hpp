@@ -27,6 +27,7 @@
 #define SYCL_BLAS_EXTENSION_INTERFACE_HPP
 
 #include "blas_meta.h"
+#include "interface/extension/backend/backend.hpp"
 #include "interface/transpose_launcher.h"
 #include "operations/blas1_trees.h"
 #include "operations/blas_operators.hpp"
@@ -60,27 +61,10 @@ _matcopy_impl(sb_handle_t& sb_handle, index_t m, index_t n, element_t alpha,
               in_t in_memory, index_t ld_in, index_t inc_in, index_t stride_in,
               out_t out_memory, index_t ld_out, index_t inc_out,
               index_t stride_out, index_t batch_size) {
-  typename sb_handle_t::event_t ret;
-
-  bool use_local_memory = sb_handle.has_local_memory();
-
-  if (use_local_memory) {
-    // Using local Memory
-
-    ret = Transpose_Launcher<32, 512, 128, true>::
-        template _select_transpose_outplace(
-            sb_handle, m, n, alpha, in_memory, ld_in, inc_in, stride_in,
-            out_memory, ld_out, inc_out, stride_out, batch_size);
-
-  } else {
-    // With no local Memory
-    ret = Transpose_Launcher<16, 128, 128, false>::
-        template _select_transpose_outplace(
-            sb_handle, m, n, alpha, in_memory, ld_in, inc_in, stride_in,
-            out_memory, ld_out, inc_out, stride_out, batch_size);
-  }
-
-  return ret;
+  return blas::extension::backend::_transpose_outplace<sb_handle_t, in_t, out_t,
+                                                       element_t, index_t>(
+      sb_handle, m, n, alpha, in_memory, ld_in, inc_in, stride_in, out_memory,
+      ld_out, inc_out, stride_out, batch_size);
 }
 
 template <bool in_place, bool trans, typename sb_handle_t, typename element_t,

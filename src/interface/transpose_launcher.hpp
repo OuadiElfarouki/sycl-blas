@@ -31,7 +31,6 @@
 
 namespace blas {
 namespace extension {
-namespace internal {
 
 /*!
  * @brief Wrapper around Transpose. Creates the views, then makes and launches
@@ -48,6 +47,10 @@ Transpose_Launcher<Tile_size, wg_size, cl_size, local_memory>::
                                index_t _stride_in, container_1_t out_,
                                index_t _ld_out, index_t _inc_out,
                                index_t _stride_out, index_t _batch_size) {
+  constexpr const index_t num_cache_line_elems = cl_size / sizeof(element_t);
+  constexpr const index_t num_tiles_per_cache_line =
+      num_cache_line_elems / Tile_size;
+
   // Matrix Views
   auto in_view = make_matrix_view<col_major>(in_, _M, _N, _ld_in, index_t(1));
   auto out_view =
@@ -64,15 +67,15 @@ Transpose_Launcher<Tile_size, wg_size, cl_size, local_memory>::
           _batch_size);
 
   if constexpr (local_memory) {
-    index_t local_mem = static_cast<index_t>((Tile_size + 1) * Tile_size) *
-                        ((index_t)local_memory);
+    index_t local_mem =
+        static_cast<index_t>((num_cache_line_elems + 1) * num_cache_line_elems /
+                             num_tiles_per_cache_line);
     return sb_handle.execute(trans_scale_tree, wg_size, global_size, local_mem);
   } else {
     return sb_handle.execute(trans_scale_tree, wg_size, global_size);
   }
 }
 
-}  // namespace internal
 }  // namespace extension
 }  // namespace blas
 
