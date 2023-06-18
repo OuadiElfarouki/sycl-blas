@@ -91,6 +91,14 @@ typename sb_handle_t::event_t _matcopy_batch(
     in_t in_memory, index_t ld_in, index_t stride_in, out_t out_memory,
     index_t ld_out, index_t stride_out, index_t batch_size);
 
+template <typename sb_handle_t, typename element_t, typename index_t,
+          typename container_t>
+typename sb_handle_t::event_t _omatadd_batch(
+    sb_handle_t& sb_handle, char trans_a, char trans_b, index_t m, index_t n,
+    element_t alpha, container_t a, index_t lda, index_t stride_a,
+    element_t beta, container_t b, index_t stride_b, index_t ldb, container_t c,
+    index_t ldc, index_t stride_c, index_t batchs_size);
+
 template <typename operator_t, typename element_t, typename sb_handle_t,
           typename input_t, typename output_t, typename index_t>
 typename sb_handle_t::event_t _reduction(sb_handle_t& sb_handle,
@@ -262,6 +270,18 @@ typename sb_handle_t::event_t _omatcopy_batch(
   return internal::_matcopy_batch<false>(
       sb_handle, trans, m, n, alpha, in_memory, ld_in, stride_in, out_memory,
       ld_out, stride_out, batch_size);
+}
+
+template <typename sb_handle_t, typename element_t, typename index_t,
+          typename container_t>
+typename sb_handle_t::event_t _omatadd_batch(
+    sb_handle_t& sb_handle, char trans_a, char trans_b, index_t m, index_t n,
+    element_t alpha, container_t a, index_t lda, index_t stride_a,
+    element_t beta, container_t b, index_t stride_b, index_t ldb, container_t c,
+    index_t ldc, index_t stride_c, index_t batchs_size) {
+  return internal::_omatadd_batch(sb_handle, trans_a, trans_b, m, n, alpha, a,
+                                  lda, stride_a, beta, b, stride_b, ldb, c, ldc,
+                                  stride_c, batchs_size);
 }
 
 template <typename operator_t, typename element_t, typename sb_handle_t,
