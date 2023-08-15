@@ -28,6 +28,8 @@
 #include "operations/blas3_trees.h"
 #include "views/view.h"
 #include <CL/sycl.hpp>
+#define SYCL_EXT_ONEAPI_COMPLEX
+#include <ext/oneapi/experimental/sycl_complex.hpp>
 #include <string>
 #include <type_traits>
 
@@ -62,7 +64,8 @@ template <int ItemRows, int ItemCols, int WgRows, int WgCols, int SgRows,
           int jm_M, int jm_N, int jm_K, typename inp_jmT, typename out_jmT>
 SYCL_BLAS_INLINE std::string
 Tile<ItemRows, ItemCols, WgRows, WgCols, SgRows, SgCols, TlRows, TlCols,
-     ItemBatchs, WgBatchs, jm_M, jm_N, jm_K, inp_jmT, out_jmT>::get_type_string() noexcept {
+     ItemBatchs, WgBatchs, jm_M, jm_N, jm_K, inp_jmT,
+     out_jmT>::get_type_string() noexcept {
   std::ostringstream str{};
   str << "Tile<" << item_rows << ", " << item_cols << ", " << wg_rows << ", "
       << wg_cols << ", " << sg_rows << ", " << sg_cols << ", " << tl_rows
@@ -86,6 +89,21 @@ SYCL_BLAS_INLINE bool do_check(bool cond) {
 template <>
 SYCL_BLAS_INLINE bool do_check<false>(bool) {
   return true;
+}
+
+// Temporary changes to overload multiply-add for complex types
+template <typename value_t>
+using complex_type = typename sycl::ext::oneapi::experimental::complex<value_t>;
+
+template <typename T>
+complex_type<T> mul_add(complex_type<T> a, complex_type<T> b,
+                        complex_type<T> c) {
+  return (a * b + c);
+}
+
+template <typename T>
+float mul_add(T a, T b, T c) {
+  return (sycl::mad(a, b, c));
 }
 
 }  // namespace blas

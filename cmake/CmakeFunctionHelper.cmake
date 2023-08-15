@@ -40,6 +40,28 @@ function(cpp_type output data)
   set(${output} "${data}" PARENT_SCOPE)
 endfunction()
 
+function(extend_to_complex output input)
+  set(outputMe "")
+  foreach(data ${input})
+    list(APPEND outputMe "${data};complex<${data}>")
+  endforeach(data)
+  set(${output} ${outputMe} PARENT_SCOPE)
+endfunction(extend_to_complex)
+
+function(cpp_type_c output data)
+  if (${data} STREQUAL "half")
+    set(${output} "cl::sycl::half" PARENT_SCOPE)
+    return()
+  elseif(${data} STREQUAL "complex<float>")
+    set(${output} "cl::sycl::ext::oneapi::experimental::complex<float>" PARENT_SCOPE)
+    return()
+  elseif(${data} STREQUAL "complex<double>")
+    set(${output} "cl::sycl::ext::oneapi::experimental::complex<double>" PARENT_SCOPE)
+    return()
+  endif()
+  set(${output} "${data}" PARENT_SCOPE)
+endfunction()
+
 ## represent the list of bolean options
 set(boolean_list "true" "false")
 
@@ -292,8 +314,12 @@ string(FIND ${func} "_const" const_pos)
 if(const_pos)
   string(REPLACE "_const" "" actualfunc ${func})
 endif()
-foreach(data ${data_list})
-  cpp_type(cpp_data ${data})
+set(data_list_full ${data_list})
+if(${func} MATCHES "gemm")
+  extend_to_complex(data_list_full ${data_list})
+endif()
+foreach(data ${data_list_full})
+  cpp_type_c(cpp_data ${data})
   set(container_list_in)
   if(const_pos EQUAL -1)
     list(APPEND container_list_in "BufferIterator<${cpp_data}>")
@@ -505,7 +531,8 @@ function(add_gemm_configuration
   batch_type
   use_joint_matrix
 )
-  if(NOT ("${data}" IN_LIST data_list))
+  extend_to_complex(data_list_c ${data_list})
+  if(NOT ("${data}" IN_LIST data_list_c))
     # Data type not enabled, skip configuration
     return()
   endif()
@@ -513,7 +540,7 @@ function(add_gemm_configuration
     # Tall/skinny configurations not enabled, skip
     return()
   endif()
-  cpp_type(cpp_data ${data})
+  cpp_type_c(cpp_data ${data})
   foreach(symm_a ${boolean_list})
     foreach(symm_b ${boolean_list})
       foreach(trans_a ${boolean_list})
@@ -592,7 +619,8 @@ if(${TUNING_TARGET} STREQUAL "INTEL_GPU")
     "double"
     "half"
   )
-  foreach(data ${supported_types})
+  extend_to_complex(data_list_c ${supported_types})
+  foreach(data ${data_list_c})
     add_gemm_configuration(
       "${data}" 64 "true" "false" "false"
       64 4 4 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 4 "strided" "false")
@@ -652,7 +680,8 @@ elseif(${TUNING_TARGET} STREQUAL "POWER_VR" AND NOT IMGDNN_DIR)
     "float"
     "half"
   )
-  foreach(data ${supported_types})
+  extend_to_complex(data_list_c ${supported_types})
+  foreach(data ${data_list_c})
     add_gemm_configuration(
       "${data}" 96 "true" "false" "false"
       16 4 6 12 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
@@ -681,7 +710,8 @@ elseif(${TUNING_TARGET} STREQUAL "AMD_GPU")  # need investigation
   set(workgroup_float 16)
   set(workgroup_double 8)
   set(workgroup_half 32)
-  foreach(data ${supported_types})
+  extend_to_complex(data_list_c ${supported_types})
+  foreach(data ${data_list_c})
     set(twr "${workgroup_${data}}")
     set(twc "${workgroup_${data}}")
 
@@ -724,7 +754,8 @@ elseif(${TUNING_TARGET} STREQUAL "NVIDIA_GPU")
       string(SUBSTRING ${DPCPP_SYCL_ARCH} ${start_idx} "2" sm_val)
     endif()
   endif()
-  foreach(data ${supported_types})
+  extend_to_complex(data_list_c ${supported_types})
+  foreach(data ${data_list_c})
     # Joint Matrix specific GEMM configurations (only for float)
     if(${start_idx} AND ${sm_val} GREATER_EQUAL "80")
       add_gemm_configuration(
@@ -753,7 +784,8 @@ else() # default cpu backend
     "float"
     "double"
   )
-  foreach(data ${supported_types})
+  extend_to_complex(data_list_c ${supported_types})
+  foreach(data ${data_list_c})
     if(NAIVE_GEMM)
       add_gemm_configuration(
         "${data}"  64 "false" "false" "false"
