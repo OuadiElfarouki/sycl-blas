@@ -26,8 +26,11 @@
 #define SYCL_BLAS_BLAS3_TREES_H
 
 #include <CL/sycl.hpp>
+
+#ifdef BLAS_ENABLE_COMPLEX
 #define SYCL_EXT_ONEAPI_COMPLEX
 #include <ext/oneapi/experimental/sycl_complex.hpp>
+#endif
 
 #include <string>
 #include <type_traits>

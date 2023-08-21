@@ -28,8 +28,6 @@
 
 #include "interface/gemm_launcher.h"
 #include "views/view.h"
-#define SYCL_EXT_ONEAPI_COMPLEX
-#include <ext/oneapi/experimental/sycl_complex.hpp>
 
 namespace blas {
 

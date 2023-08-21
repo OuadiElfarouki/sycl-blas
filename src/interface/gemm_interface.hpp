@@ -38,9 +38,6 @@
 #include <stdexcept>
 #include <vector>
 
-#define SYCL_EXT_ONEAPI_COMPLEX
-#include <ext/oneapi/experimental/sycl_complex.hpp>
-
 namespace blas {
 
 /*!
@@ -51,13 +48,26 @@ namespace blas {
  */
 namespace internal {
 
+#ifdef BLAS_ENABLE_COMPLEX
+// Template alias for complex types
 template <typename value_t>
 using complex_type =
     typename cl::sycl::ext::oneapi::experimental::complex<value_t>;
+// Checking whether value is complex
 template <typename c_type, typename value_t>
 using is_complex = typename std::is_same<c_type, complex_type<value_t>>::value;
+// Check whether value is zero (complex)
+template <typename T>
+inline bool isZero(const complex_type<T>& value) {
+  return (value == complex_type<T>((T)0, (T)0));
+}
+#endif
 
-const complex_type<float> zero_c(float(0), float(0));
+// Check whether value is zero (integral/float)
+template <typename T>
+inline bool isZero(const T& value) {
+  return (value == static_cast<T>(0));
+}
 
 template <bool _t_a, bool _t_b, bool s_a, bool s_b, bool is_beta_zero,
           typename sb_handle_t, typename container_0_t, typename container_1_t,
@@ -76,38 +86,13 @@ typename sb_handle_t::event_t _gemm_platform_specific(
 template <bool _t_a, bool _t_b, bool s_a, bool s_b, typename sb_handle_t,
           typename container_0_t, typename container_1_t,
           typename container_2_t, typename element_t, typename index_t>
-typename std::enable_if<(!is_complex<element_t, float>::value &&
-                         !is_complex<element_t, double>::value),
-                        sb_handle_t::event_t>::type
-_gemm_is_beta_zero(sb_handle_t& sb_handle, index_t _M, index_t _N, index_t _K,
-                   element_t _alpha, container_0_t a_, index_t _lda,
-                   index_t _stridea, container_1_t b_, index_t _ldb,
-                   index_t _strideb, element_t _beta, container_2_t _C,
-                   index_t _ldc, index_t _stridec, index_t batch_size,
-                   gemm_batch_type_t batch_type) {
-  return ((_beta == static_cast<element_t>(0))
-              ? _gemm_platform_specific<_t_a, _t_b, s_a, s_b, true>(
-                    sb_handle, _M, _N, _K, _alpha, a_, _lda, _stridea, b_, _ldb,
-                    _strideb, _beta, _C, _ldc, _stridec, batch_size, batch_type)
-              : _gemm_platform_specific<_t_a, _t_b, s_a, s_b, false>(
-                    sb_handle, _M, _N, _K, _alpha, a_, _lda, _stridea, b_, _ldb,
-                    _strideb, _beta, _C, _ldc, _stridec, batch_size,
-                    batch_type));
-}
-
-template <bool _t_a, bool _t_b, bool s_a, bool s_b, typename sb_handle_t,
-          typename container_0_t, typename container_1_t,
-          typename container_2_t, typename element_t, typename index_t>
-typename std::enable_if<(is_complex<element_t, float>::value ||
-                         is_complex<element_t, double>::value),
-                        sb_handle_t::event_t>::type
-_gemm_is_beta_zero(sb_handle_t& sb_handle, index_t _M, index_t _N, index_t _K,
-                   element_t _alpha, container_0_t a_, index_t _lda,
-                   index_t _stridea, container_1_t b_, index_t _ldb,
-                   index_t _strideb, element_t _beta, container_2_t _C,
-                   index_t _ldc, index_t _stridec, index_t batch_size,
-                   gemm_batch_type_t batch_type) {
-  return (_beta == zero_c)
+typename sb_handle_t::event_t _gemm_is_beta_zero(
+    sb_handle_t& sb_handle, index_t _M, index_t _N, index_t _K,
+    element_t _alpha, container_0_t a_, index_t _lda, index_t _stridea,
+    container_1_t b_, index_t _ldb, index_t _strideb, element_t _beta,
+    container_2_t _C, index_t _ldc, index_t _stridec, index_t batch_size,
+    gemm_batch_type_t batch_type) {
+  return isZero(_beta)
              ? _gemm_platform_specific<_t_a, _t_b, s_a, s_b, true>(
                    sb_handle, _M, _N, _K, _alpha, a_, _lda, _stridea, b_, _ldb,
                    _strideb, _beta, _C, _ldc, _stridec, batch_size, batch_type)
