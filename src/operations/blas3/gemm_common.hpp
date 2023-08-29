@@ -29,11 +29,6 @@
 #include "views/view.h"
 #include <CL/sycl.hpp>
 
-#ifdef BLAS_ENABLE_COMPLEX
-#define SYCL_EXT_ONEAPI_COMPLEX
-#include <ext/oneapi/experimental/sycl_complex.hpp>
-#endif
-
 #include <string>
 #include <type_traits>
 
@@ -51,7 +46,7 @@ complex_type<T> mul_add(complex_type<T> a, complex_type<T> b,
 #endif
 
 template <typename T>
-float mul_add(T a, T b, T c) {
+T mul_add(T a, T b, T c) {
   return (sycl::mad(a, b, c));
 }
 

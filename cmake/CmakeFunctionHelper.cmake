@@ -314,25 +314,28 @@ endif()
 set(data_list_c ${data_list})
 if(BLAS_ENABLE_COMPLEX)
   if(${func} MATCHES "gemm")
-    extend_to_complex(data_list_c ${data_list})
-    message("Ayoo done for gemm")
+    extend_to_complex(data_list_c "${data_list}")
   endif()
 endif()
 foreach(data ${data_list_c})
   cpp_type(cpp_data ${data})
   set(container_list_in)
+  set(container_list_in_reduced)
   if(const_pos EQUAL -1)
     list(APPEND container_list_in "BufferIterator<${cpp_data}>")
+    list(APPEND container_list_in_reduced "Buffer<${data}>")
   else()
     list(APPEND container_list_in "BufferIterator<${cpp_data} const>")
+    list(APPEND container_list_in_reduced "Buffer<${data} const>")
   endif()
   set(container_list_out "BufferIterator<${cpp_data}>")
+  set(container_list_out_reduced "Buffer<${data}>")
   foreach(index ${index_list})
-    foreach(container0 ${container_list_in})
-      foreach(container1 ${container_list_in})
-        foreach(container2 ${container_list_out})
+    foreach(C0 IN ZIP_LISTS container_list_in container_list_in_reduced)
+      foreach(C1 IN ZIP_LISTS container_list_in container_list_in_reduced)
+        foreach(C2 IN ZIP_LISTS container_list_out container_list_out_reduced)
           set(container_names
-            "${container0}_${container1}_${container2}")
+            "${C0_1}_${C1_1}_${C2_1}")
           foreach(increment ${index_list})
             sanitize_file_name(file_name
               "${func}_${data}_${index}_${container_names}_${increment}.cpp")
@@ -346,9 +349,9 @@ foreach(data ${data_list_c})
                 ${cpp_data}
                 ${index}
                 ${increment}
-                ${container0}
-                ${container1}
-                ${container2}
+                ${C0_0}
+                ${C1_0}
+                ${C2_0}
                 ${file_name}
               MAIN_DEPENDENCY ${SYCLBLAS_SRC}/interface/${blas_level}/${actualfunc}.cpp.in
               DEPENDS ${SYCLBLAS_SRC_GENERATOR}/py_gen_blas_ternary.py
@@ -357,9 +360,9 @@ foreach(data ${data_list_c})
             )
             list(APPEND FUNC_SRC "${LOCATION}/${file_name}")
           endforeach(increment)
-        endforeach(container2)
-      endforeach(container1)
-    endforeach(container0)
+        endforeach(C2)
+      endforeach(C1)
+    endforeach(C0)
   endforeach(index)
 endforeach(data)
 add_library(${func} OBJECT ${FUNC_SRC})
@@ -533,7 +536,7 @@ function(add_gemm_configuration
 )
   set(data_list_c ${data_list})
   if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c ${data_list})
+    extend_to_complex(data_list_c "${data_list}")
   endif()
   if(NOT ("${data}" IN_LIST data_list_c))
     # Data type not enabled, skip configuration
@@ -624,7 +627,7 @@ if(${TUNING_TARGET} STREQUAL "INTEL_GPU")
   )
   set(data_list_c ${supported_types})
   if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c ${supported_types})
+    extend_to_complex(data_list_c "${supported_types}")
   endif()
   foreach(data ${data_list_c})
     add_gemm_configuration(
@@ -688,7 +691,7 @@ elseif(${TUNING_TARGET} STREQUAL "POWER_VR" AND NOT IMGDNN_DIR)
   )
   set(data_list_c ${supported_types})
   if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c ${supported_types})
+    extend_to_complex(data_list_c "${supported_types}")
   endif()
   foreach(data ${data_list_c})
     add_gemm_configuration(
@@ -721,7 +724,7 @@ elseif(${TUNING_TARGET} STREQUAL "AMD_GPU")  # need investigation
   set(workgroup_half 32)
   set(data_list_c ${supported_types})
   if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c ${supported_types})
+    extend_to_complex(data_list_c "${supported_types}")
   endif()
   foreach(data ${data_list_c})
     set(twr "${workgroup_${data}}")
@@ -755,10 +758,7 @@ elseif(${TUNING_TARGET} STREQUAL "AMD_GPU")  # need investigation
       64 4 4 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false")
   endforeach()
 elseif(${TUNING_TARGET} STREQUAL "NVIDIA_GPU")
-  set(supported_types
-    "float"
-    "double"
-    )
+  set(supported_types float double)
   if(is_dpcpp AND DEFINED DPCPP_SYCL_ARCH)
     string(FIND ${DPCPP_SYCL_ARCH} "_" start_idx)
     if(start_idx)
@@ -768,8 +768,7 @@ elseif(${TUNING_TARGET} STREQUAL "NVIDIA_GPU")
   endif()
   set(data_list_c ${supported_types})
   if(BLAS_ENABLE_COMPLEX)
-    message("Ayoo done for gemmLauncher")
-    extend_to_complex(data_list_c ${supported_types})
+    extend_to_complex(data_list_c "${supported_types}")
   endif()
   foreach(data ${data_list_c})
     # Joint Matrix specific GEMM configurations (only for float)
@@ -791,9 +790,9 @@ elseif(${TUNING_TARGET} STREQUAL "NVIDIA_GPU")
     add_gemm_configuration(
         "${data}"  64 "false" "false" "true"
           64 8 8 8 8 1 1 2 2 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
-    add_gemm_configuration(
-      "${data}" 64 "false" "false" "false"
-      64 2 2 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false")
+    # add_gemm_configuration(
+    #   "${data}" 64 "false" "false" "false"
+    #   64 2 2 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false")
   endforeach()
 else() # default cpu backend
   set(supported_types
@@ -802,7 +801,7 @@ else() # default cpu backend
   )
   set(data_list_c ${supported_types})
   if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c ${supported_types})
+    extend_to_complex(data_list_c "${supported_types}")
   endif()
   foreach(data ${data_list_c})
     if(NAIVE_GEMM)
