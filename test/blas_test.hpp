@@ -290,6 +290,7 @@ struct dump_arg_helper<cl::sycl::half> {
   }
 };
 
+#ifdef BLAS_ENABLE_COMPLEX
 /** Specialization of dump_arg_helper for std::complex types.
  *  This is required to split the real & imag parts properly and avoid
  *  by-default parentheses format.
@@ -305,6 +306,7 @@ struct dump_arg_helper<
     ss << "i";
   }
 };
+#endif
 
 /**
  * Type of the tested api

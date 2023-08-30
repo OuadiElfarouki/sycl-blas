@@ -35,20 +35,26 @@
 namespace blas {
 
 #ifdef BLAS_ENABLE_COMPLEX
-template <typename value_t>
-using complex_type = typename sycl::ext::oneapi::experimental::complex<value_t>;
-
 template <typename T>
-complex_type<T> mul_add(complex_type<T> a, complex_type<T> b,
-                        complex_type<T> c) {
+inline T mul_add(
+    T a, T b, T c,
+    typename std::enable_if<is_complex_sycl<T>::value>::type * = 0) {
   return (a * b + c);
 }
-#endif
 
 template <typename T>
-T mul_add(T a, T b, T c) {
+inline T mul_add(
+    T a, T b, T c,
+    typename std::enable_if<!is_complex_sycl<T>::value>::type * = 0) {
   return (sycl::mad(a, b, c));
 }
+#else
+
+template <typename T>
+inline T mul_add(T a, T b, T c) {
+  return (sycl::mad(a, b, c));
+}
+#endif
 
 template <typename T>
 struct type_string {

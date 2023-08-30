@@ -27,8 +27,10 @@
 #define UTILS_FLOAT_COMPARISON_H_
 
 #include <cmath>
-#include <complex>
 #include <iostream>
+#ifdef BLAS_ENABLE_COMPLEX
+#include <complex>
+#endif
 
 #ifdef BLAS_DATA_TYPE_HALF
 #if SYCL_LANGUAGE_VERSION < 202000
@@ -66,6 +68,7 @@ scalar_t abs(scalar_t value) noexcept {
   return std::abs(value);
 }
 
+#ifdef BLAS_ENABLE_COMPLEX
 template <typename scalar_t>
 bool isnan(std::complex<scalar_t> value) noexcept {
   return (isnan<scalar_t>(value.imag()) || isnan<scalar_t>(value.imag()));
@@ -80,6 +83,7 @@ template <typename scalar_t>
 scalar_t abs(std::complex<scalar_t> value) noexcept {
   return std::abs(value);
 }
+#endif
 
 #ifdef BLAS_DATA_TYPE_HALF
 template <>
@@ -228,6 +232,7 @@ inline bool compare_vectors(std::vector<scalar_t> const& vec,
   return true;
 }
 
+#ifdef BLAS_ENABLE_COMPLEX
 /**
  * Compare two vectors of complex data and returns false if the difference is
  * not acceptable. The second vector is considered the reference.
@@ -256,6 +261,7 @@ inline bool compare_vectors(std::vector<std::complex<scalar_t>> const& vec,
   }
   return true;
 }
+#endif
 
 /**
  * Compare two vectors at a given stride and window and returns
@@ -298,6 +304,7 @@ inline bool compare_vectors_strided(std::vector<scalar_t> const& vec,
   return true;
 }
 
+#ifdef BLAS_ENABLE_COMPLEX
 /**
  * Compare two vectors of complex data at a given stride and window and returns
  * false if the difference is not acceptable. The second vector is considered
@@ -340,6 +347,7 @@ inline bool compare_vectors_strided(
 
   return true;
 }
+#endif
 
 }  // namespace utils
 

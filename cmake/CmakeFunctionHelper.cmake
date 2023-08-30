@@ -46,13 +46,19 @@ function(cpp_type output data)
   set(${output} "${data}" PARENT_SCOPE)
 endfunction()
 
-function(extend_to_complex output input)
-  set(outputMe "")
-  foreach(data ${input})
-    list(APPEND outputMe "${data};complex<${data}>")
-  endforeach(data)
-  set(${output} ${outputMe} PARENT_SCOPE)
-endfunction(extend_to_complex)
+function(set_complex_list output input append)
+  set(output_temp "")
+  if(${append} STREQUAL "true")
+    foreach(data ${input})
+      list(APPEND output_temp "${data};complex<${data}>")
+    endforeach(data)
+  else()
+    foreach(data ${input})
+      list(APPEND output_temp "complex<${data}>")
+    endforeach(data)
+  endif()
+  set(${output} ${output_temp} PARENT_SCOPE)
+endfunction(set_complex_list)
 
 ## represent the list of bolean options
 set(boolean_list "true" "false")
@@ -314,7 +320,7 @@ endif()
 set(data_list_c ${data_list})
 if(BLAS_ENABLE_COMPLEX)
   if(${func} MATCHES "gemm")
-    extend_to_complex(data_list_c "${data_list}")
+    set_complex_list(data_list_c "${data_list}" "true")
   endif()
 endif()
 foreach(data ${data_list_c})
@@ -536,7 +542,7 @@ function(add_gemm_configuration
 )
   set(data_list_c ${data_list})
   if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c "${data_list}")
+    set_complex_list(data_list_c "${data_list}" "true")
   endif()
   if(NOT ("${data}" IN_LIST data_list_c))
     # Data type not enabled, skip configuration
@@ -627,7 +633,7 @@ if(${TUNING_TARGET} STREQUAL "INTEL_GPU")
   )
   set(data_list_c ${supported_types})
   if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c "${supported_types}")
+    set_complex_list(data_list_c "${supported_types}" "false")
   endif()
   foreach(data ${data_list_c})
     add_gemm_configuration(
@@ -691,7 +697,7 @@ elseif(${TUNING_TARGET} STREQUAL "POWER_VR" AND NOT IMGDNN_DIR)
   )
   set(data_list_c ${supported_types})
   if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c "${supported_types}")
+    set_complex_list(data_list_c "${supported_types}" "false")
   endif()
   foreach(data ${data_list_c})
     add_gemm_configuration(
@@ -723,10 +729,7 @@ elseif(${TUNING_TARGET} STREQUAL "AMD_GPU")  # need investigation
   set(workgroup_double 8)
   set(workgroup_half 32)
   set(data_list_c ${supported_types})
-  if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c "${supported_types}")
-  endif()
-  foreach(data ${data_list_c})
+  foreach(data ${supported_types})
     set(twr "${workgroup_${data}}")
     set(twc "${workgroup_${data}}")
 
@@ -757,8 +760,19 @@ elseif(${TUNING_TARGET} STREQUAL "AMD_GPU")  # need investigation
       "${data}" 64 "false" "false" "false"
       64 4 4 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false")
   endforeach()
+  if(BLAS_ENABLE_COMPLEX)
+    set(data_list_c)
+    set_complex_list(data_list_c "${supported_types}" "false")
+    foreach(data ${data_list_c})
+      set(twr "${workgroup_${data}}")
+      set(twc "${workgroup_${data}}")
+      add_gemm_configuration(
+        "${data}" 256 "false" "false" "false"
+        64 1 1 ${twr} ${twc} 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
+    endforeach()
+  endif() # BLAS_ENABLE_COMPLEX
 elseif(${TUNING_TARGET} STREQUAL "NVIDIA_GPU")
-  set(supported_types float double)
+  set(supported_types "float" "double")
   if(is_dpcpp AND DEFINED DPCPP_SYCL_ARCH)
     string(FIND ${DPCPP_SYCL_ARCH} "_" start_idx)
     if(start_idx)
@@ -766,11 +780,7 @@ elseif(${TUNING_TARGET} STREQUAL "NVIDIA_GPU")
       string(SUBSTRING ${DPCPP_SYCL_ARCH} ${start_idx} "2" sm_val)
     endif()
   endif()
-  set(data_list_c ${supported_types})
-  if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c "${supported_types}")
-  endif()
-  foreach(data ${data_list_c})
+  foreach(data ${supported_types})
     # Joint Matrix specific GEMM configurations (only for float)
     if(${start_idx} AND ${sm_val} GREATER_EQUAL "80")
       add_gemm_configuration(
@@ -790,20 +800,25 @@ elseif(${TUNING_TARGET} STREQUAL "NVIDIA_GPU")
     add_gemm_configuration(
         "${data}"  64 "false" "false" "true"
           64 8 8 8 8 1 1 2 2 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
-    # add_gemm_configuration(
-    #   "${data}" 64 "false" "false" "false"
-    #   64 2 2 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false")
+    add_gemm_configuration(
+      "${data}" 64 "false" "false" "false"
+      64 2 2 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false")
   endforeach()
+  if(BLAS_ENABLE_COMPLEX)
+    set(data_list_c)
+    set_complex_list(data_list_c "${supported_types}" "false")
+    foreach(data ${data_list_c})
+      add_gemm_configuration(
+        "${data}"  64 "false" "false" "true"
+          64 8 8 8 8 1 1 2 2 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
+    endforeach()
+  endif() # BLAS_ENABLE_COMPLEX
 else() # default cpu backend
   set(supported_types
     "float"
     "double"
   )
-  set(data_list_c ${supported_types})
-  if(BLAS_ENABLE_COMPLEX)
-    extend_to_complex(data_list_c "${supported_types}")
-  endif()
-  foreach(data ${data_list_c})
+  foreach(data ${supported_types})
     if(NAIVE_GEMM)
       add_gemm_configuration(
         "${data}"  64 "false" "false" "false"
@@ -819,13 +834,25 @@ else() # default cpu backend
         "${data}"  64 "false" "false" "false"
         64 2 2 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 2 "strided" "false" "false")
     endif()
-  endforeach()
-
-  foreach(data ${supported_types})
     add_gemm_configuration(
       "${data}" 64 "false" "false" "false"
       64 2 2 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false" "false")
   endforeach()
+  if(BLAS_ENABLE_COMPLEX)
+    set(data_list_c)
+    set_complex_list(data_list_c "${supported_types}" "false")
+    foreach(data ${data_list_c})
+      add_gemm_configuration(
+        "${data}"  64 "false" "false" "false"
+        64 2 2 8 8 1 1 1 1 1 1 1 1 1 float float "no_local" "standard" "full" 2 "strided" "false" "false")
+      add_gemm_configuration(
+        "${data}"  64 "false" "false" "false"
+        64 8 8 8 8 1 1 1 1 1 1 1 1 1 float float "no_local" "standard" "partial" 1 "strided" "false" "false")
+      add_gemm_configuration(
+        "${data}"  64 "false" "false" "false"
+        64 2 2 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 2 "strided" "false" "false")
+    endforeach()
+  endif() # BLAS_ENABLE_COMPLEX
 endif()
 add_library(${func} OBJECT ${gemm_sources})
 set_target_compile_def(${func})

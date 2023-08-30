@@ -48,24 +48,15 @@ namespace blas {
  */
 namespace internal {
 
-#ifdef BLAS_ENABLE_COMPLEX
-// Template alias for complex types
-template <typename value_t>
-using complex_type =
-    typename cl::sycl::ext::oneapi::experimental::complex<value_t>;
-// Checking whether value is complex
-template <typename c_type, typename value_t>
-using is_complex = typename std::is_same<c_type, complex_type<value_t>>::value;
-// Check whether value is zero (complex)
-template <typename T>
-inline bool isZero(const complex_type<T>& value) {
-  return (value == complex_type<T>((T)0, (T)0));
-}
-#endif
-
-// Check whether value is zero (integral/float)
+// Check whether value is zero (complex & float)
 template <typename T>
 inline bool isZero(const T& value) {
+#ifdef BLAS_ENABLE_COMPLEX
+  if constexpr (is_complex_sycl<T>::value) {
+    using value_t = typename T::value_type;
+    return (value == T(value_t(0), value_t(0)));
+  }
+#endif
   return (value == static_cast<T>(0));
 }
 
