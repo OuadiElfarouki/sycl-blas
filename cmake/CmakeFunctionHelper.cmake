@@ -819,7 +819,9 @@ else() # default cpu backend
         "${data}"  64 "false" "false" "false"
         64 2 2 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 2 "strided" "false" "false")
     endif()
+  endforeach()
 
+  foreach(data ${supported_types})
     add_gemm_configuration(
       "${data}" 64 "false" "false" "false"
       64 2 2 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false" "false")

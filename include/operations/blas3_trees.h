@@ -29,6 +29,7 @@
 
 #ifdef BLAS_ENABLE_COMPLEX
 #define SYCL_EXT_ONEAPI_COMPLEX
+#include <complex>
 #include <ext/oneapi/experimental/sycl_complex.hpp>
 #endif
 
@@ -336,6 +337,29 @@ DiagonalBlocksInverter<UnitDiag, Upper, BlockSize, matrix_t>
 make_diag_blocks_inverter(matrix_t& A, matrix_t& invA) {
   return DiagonalBlocksInverter<UnitDiag, Upper, BlockSize, matrix_t>(A, invA);
 }
+
+#ifdef BLAS_ENABLE_COMPLEX
+// SYCL Complex type alias
+template <typename T>
+using complex_sycl = typename cl::sycl::ext::oneapi::experimental::complex<T>;
+
+// STD Complex type alias
+template <typename T>
+using complex_std = typename std::complex<T>;
+
+template <class type>
+struct is_complex_sycl
+    : std::integral_constant<bool,
+                             std::is_same_v<type, complex_sycl<double>> ||
+                                 std::is_same_v<type, complex_sycl<float>>> {};
+
+template <class type>
+struct is_complex_std
+    : std::integral_constant<bool,
+                             std::is_same_v<type, complex_std<double>> ||
+                                 std::is_same_v<type, complex_std<float>>> {};
+
+#endif
 
 }  // namespace blas
 
