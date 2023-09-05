@@ -17,18 +17,13 @@
 # *  See the License for the specific language governing permissions and
 # *  limitations under the License.
 # *
-# *  SYCL-BLAS: BLAS implementation using SYCL
+# *  portBLAS: BLAS implementation using SYCL
 # *
 # *  @filename CMakeLists.txt
 # *
 # **************************************************************************/
 
-generate_blas_unary_objects(extension matcopy)
-generate_blas_unary_objects(extension transpose)
-generate_blas_unary_objects(extension omatadd)
+generate_blas_objects(extension matcopy)
+generate_blas_objects(extension transpose)
+generate_blas_objects(extension omatadd)
 generate_blas_reduction_objects(extension reduction)
-
-if(BLAS_ENABLE_CONST_INPUT)
-    generate_blas_reduction_objects(extension reduction_const)
-endif()
-
