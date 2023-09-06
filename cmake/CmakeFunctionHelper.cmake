@@ -115,12 +115,15 @@ function(set_target_compile_def in_target)
   endif()
 endfunction()
 
+#List of operators supporting Complex Data types
+set(COMPLEX_OPS "gemm" "scal")
+
 # blas unary function for generating source code
 function(generate_blas_objects blas_level func)
   set(LOCATION "${PORTBLAS_GENERATED_SRC}/${blas_level}/${func}/")
   set(data_list_c ${data_list})
   if(BLAS_ENABLE_COMPLEX)
-    if(${func} MATCHES "gemm")
+    if("${func}" IN_LIST COMPLEX_OPS)
       set_complex_list(data_list_c "${data_list}" "true")
     endif()
   endif()
@@ -573,13 +576,13 @@ else() # default cpu backend
     foreach(data ${data_list_c})
       add_gemm_configuration(
         "${data}"  64 "false" "false" "false"
-        64 2 2 8 8 1 1 1 1 1 1 1 1 1 float float "no_local" "standard" "full" 2 "strided" "false" "false")
+        64 2 2 8 8 1 1 1 1 1 1 1 1 1 float float "no_local" "standard" "full" 1 "strided" "false" "false")
       add_gemm_configuration(
         "${data}"  64 "false" "false" "false"
         64 8 8 8 8 1 1 1 1 1 1 1 1 1 float float "no_local" "standard" "partial" 1 "strided" "false" "false")
       add_gemm_configuration(
         "${data}"  64 "false" "false" "false"
-        64 2 2 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 2 "strided" "false" "false")
+        64 2 2 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false" "false")
     endforeach()
   endif() # BLAS_ENABLE_COMPLEX
 endif()

@@ -29,6 +29,11 @@
 #include <CL/sycl.hpp>
 #include <type_traits>
 #include <utility>
+#ifdef BLAS_ENABLE_COMPLEX
+#define SYCL_EXT_ONEAPI_COMPLEX
+#include <complex>
+#include <ext/oneapi/experimental/sycl_complex.hpp>
+#endif
 
 namespace blas {
 
@@ -190,6 +195,28 @@ struct is_sycl_scalar<float *> : std::false_type {};
 template <>
 struct is_sycl_scalar<double *> : std::false_type {};
 
+#ifdef BLAS_ENABLE_COMPLEX
+// SYCL Complex type alias
+template <typename T>
+using complex_sycl = typename cl::sycl::ext::oneapi::experimental::complex<T>;
+
+// STD Complex type alias
+template <typename T>
+using complex_std = typename std::complex<T>;
+
+template <class type>
+struct is_complex_sycl
+    : std::integral_constant<bool,
+                             std::is_same_v<type, complex_sycl<double>> ||
+                                 std::is_same_v<type, complex_sycl<float>>> {};
+
+template <class type>
+struct is_complex_std
+    : std::integral_constant<bool,
+                             std::is_same_v<type, complex_std<double>> ||
+                                 std::is_same_v<type, complex_std<float>>> {};
+
+#endif
 }  // namespace blas
 
 #endif  // BLAS_META_H

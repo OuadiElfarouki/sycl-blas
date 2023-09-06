@@ -199,6 +199,26 @@ const auto CplxSmallBetaZeroLDMultiplied = ::testing::Combine(
 GENERATE_CPLX_GEMM_TEST(Gemm, CplxSmallBetaZeroLDMultiplied);
 
 template <typename scalar_t>
+const auto CplxAlphaZero = ::testing::Combine(
+    ::testing::Values("usm", "buf"),                        // allocation type
+    ::testing::Values(0, 10),                               // offset
+    ::testing::Values(1),                                   // batch
+    ::testing::Values(16),                                  // m
+    ::testing::Values(16),                                  // n
+    ::testing::Values(17),                                  // k
+    ::testing::Values('n'),                                 // transa
+    ::testing::Values('n'),                                 // transb
+    ::testing::Values<std::complex<scalar_t>>({0.0, 0.0}),  // alpha
+    ::testing::Values(std::complex<scalar_t>{0.0, 0.0},
+                      std::complex<scalar_t>{1.0, 0.0}),  // beta
+    ::testing::Values(1, 2),                              // lda_mul
+    ::testing::Values(1, 2),                              // ldb_mul
+    ::testing::Values(1, 2),                              // ldc_mul
+    ::testing::Values(gemm_batch_type_t::strided)         // batch_type
+);
+GENERATE_CPLX_GEMM_TEST(Gemm, CplxAlphaZero);
+
+template <typename scalar_t>
 const auto CplxOffsetNonZero = ::testing::Combine(
     ::testing::Values("usm", "buf"),                        // allocation type
     ::testing::Values(1, 10),                               // offset
