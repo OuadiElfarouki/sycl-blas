@@ -36,22 +36,22 @@ namespace blas {
 
 #ifdef BLAS_ENABLE_COMPLEX
 template <typename T>
-inline T mul_add(
-    T a, T b, T c,
-    typename std::enable_if<is_complex_sycl<T>::value>::type * = 0) {
+static PORTBLAS_INLINE T
+mul_add(T a, T b, T c,
+        typename std::enable_if<is_complex_sycl<T>::value>::type * = 0) {
   return (a * b + c);
 }
 
 template <typename T>
-inline T mul_add(
-    T a, T b, T c,
-    typename std::enable_if<!is_complex_sycl<T>::value>::type * = 0) {
+static PORTBLAS_INLINE T
+mul_add(T a, T b, T c,
+        typename std::enable_if<!is_complex_sycl<T>::value>::type * = 0) {
   return (sycl::mad(a, b, c));
 }
 #else
 
 template <typename T>
-inline T mul_add(T a, T b, T c) {
+static PORTBLAS_INLINE T mul_add(T a, T b, T c) {
   return (sycl::mad(a, b, c));
 }
 #endif

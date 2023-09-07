@@ -460,7 +460,6 @@ elseif(${TUNING_TARGET} STREQUAL "AMD_GPU")  # need investigation
   set(workgroup_float 16)
   set(workgroup_double 8)
   set(workgroup_half 32)
-  set(data_list_c ${supported_types})
   foreach(data ${supported_types})
     set(twr "${workgroup_${data}}")
     set(twc "${workgroup_${data}}")
@@ -500,7 +499,10 @@ elseif(${TUNING_TARGET} STREQUAL "AMD_GPU")  # need investigation
       set(twc "${workgroup_${data}}")
       add_gemm_configuration(
         "${data}" 256 "false" "false" "false"
-        64 1 1 ${twr} ${twc} 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
+        64 1 1 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
+      add_gemm_configuration(
+        "${data}" 256 "false" "false" "false"
+        64 4 4 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
     endforeach()
   endif() # BLAS_ENABLE_COMPLEX
 elseif(${TUNING_TARGET} STREQUAL "NVIDIA_GPU")

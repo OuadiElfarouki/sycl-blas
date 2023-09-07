@@ -187,10 +187,6 @@ struct Packetize {
 };
 
 #ifdef BLAS_ENABLE_COMPLEX
-// Templated alias for sycl::complex data type.
-template <typename value_t>
-using complex_type = typename sycl::ext::oneapi::experimental::complex<value_t>;
-
 /*! @brief vec_complex is an intermediate wrapper of sycl::complex used in
  * Packetize. It serves as a temporary workaround to the upcoming
  * sycl::vec<syc::complex> container
@@ -299,13 +295,13 @@ supported so far.
 * @tparam value_t The complex type of the matrix data.
 */
 template <int vector_size, typename T, typename index_t>
-struct Packetize<vector_size, complex_type<T>, index_t> {
+struct Packetize<vector_size, complex_sycl<T>, index_t> {
   // Vectorization is not enabled for complex, always set to 1
-  using value_t = complex_type<T>;
+  using value_t = complex_sycl<T>;
   using PacketType = vec_complex<value_t, 1>;
   static constexpr int packet_size = 1;
   template <index_t dimension>
-  PORTBLAS_INLINE static constexpr bool check_size() {
+  static PORTBLAS_INLINE constexpr bool check_size() {
     return true;
   }
 
