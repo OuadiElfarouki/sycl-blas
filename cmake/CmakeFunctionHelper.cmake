@@ -363,11 +363,7 @@ if(${TUNING_TARGET} STREQUAL "INTEL_GPU")
     "double"
     "half"
   )
-  set(data_list_c ${supported_types})
-  if(BLAS_ENABLE_COMPLEX)
-    set_complex_list(data_list_c "${supported_types}" "false")
-  endif()
-  foreach(data ${data_list_c})
+  foreach(data ${supported_types})
     add_gemm_configuration(
       "${data}" 64 "true" "false" "false"
       64 4 4 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 4 "strided" "false")
@@ -422,6 +418,24 @@ if(${TUNING_TARGET} STREQUAL "INTEL_GPU")
       "${data}" 64 "false" "false" "false"
       64 4 4 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false")
   endforeach()
+  if(BLAS_ENABLE_COMPLEX)
+    set(data_list_c)
+    set_complex_list(data_list_c "${supported_types}" "false")
+    foreach(data ${data_list_c})
+      add_gemm_configuration(
+        "${data}" 64 "true" "false" "false"
+        64 4 4 8 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
+      add_gemm_configuration(
+        "${data}" 64 "false" "false" "false"
+        64 4 8 16 8 1 1 1 1 1 1 1 1 1 float float "local" "standard" "full" 1 "strided" "false")
+      add_gemm_configuration(
+        "${data}" 64 "false" "false" "false"
+        64 8 8 8 8 1 1 1 1 1 1 1 1 1 float float "no_local" "standard" "partial" 1 "strided" "false")
+      add_gemm_configuration(
+        "${data}" 32 "true" "true" "true"
+        64 2 1 8 4 1 1 1 1 1 1 1 1 1 float float "local" "tall_skinny" "none" 1 "strided" "false")
+    endforeach()
+  endif() # BLAS_ENABLE_COMPLEX
 elseif(${TUNING_TARGET} STREQUAL "POWER_VR" AND NOT IMGDNN_DIR)
   set(supported_types
     "float"
