@@ -76,6 +76,9 @@ function(sanitize_file_name output file_name)
   set(${output} "${file_name}" PARENT_SCOPE)
 endfunction()
 
+#List of operators supporting Complex Data types
+set(COMPLEX_OPS "gemm" "gemm_launcher" "scal")
+
 function(set_target_compile_def in_target)
   #setting compiler flag for backend
   if(${TUNING_TARGET} STREQUAL "INTEL_GPU")
@@ -110,13 +113,13 @@ function(set_target_compile_def in_target)
   endif()
   #setting complex support
   if(${BLAS_ENABLE_COMPLEX})
-    message(STATUS "Gemm Complex type support enabled for target ${in_target}")
-    target_compile_definitions(${in_target} PUBLIC BLAS_ENABLE_COMPLEX=1)
+    if("${in_target}" IN_LIST COMPLEX_OPS)
+      message(STATUS "Complex Data type support enabled for target ${in_target}")
+      target_compile_definitions(${in_target} PUBLIC BLAS_ENABLE_COMPLEX=1)
+    endif()
   endif()
 endfunction()
 
-#List of operators supporting Complex Data types
-set(COMPLEX_OPS "gemm" "scal")
 
 # blas unary function for generating source code
 function(generate_blas_objects blas_level func)
