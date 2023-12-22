@@ -133,6 +133,107 @@ Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
   }
 }
 
+template <bool in_place, int wg_size, int shuffle_unit, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE void
+TransposeShuffle<in_place, wg_size, shuffle_unit, in_t, out_t, element_t>::eval(
+    cl::sycl::nd_item<1> item) {
+  auto sg = item.get_sub_group();
+  uint sgId = sg.get_local_id()[0];
+  uint sgIdxG = sg.get_group_id()[0];
+
+  auto tj = (item.get_group(0)) / tile_count_m_;
+  auto ti = (item.get_group(0)) - tj * tile_count_m_;
+
+  int ai = wg_size * ti + sgIdxG * shuffle_unit;
+  int aj = wg_size * tj;
+
+  for (auto rep = 0; rep < wg_size / shuffle_unit; rep++) {
+    aj += rep * shuffle_unit;
+    element_t brow[shuffle_unit];
+    for (uint k = 0; k < shuffle_unit; k++) {
+      // brow is a row filled sequentially per work item
+      brow[k] = sg.load(A_.get_pointer() + ai + (aj + k) * lda_);
+      brow[k] *= alpha_;
+    }
+
+    element_t tcol[shuffle_unit];
+    //   for (int rep = 0; rep < shuffles_per_wg_; rep++) {
+    // #pragma unroll
+    //     for (uint n = 0; n < shuffle_unit; n++) {
+    //       if (sgId == n) {
+    //         for (uint k = rep * shuffle_unit; k < (rep + 1) * shuffle_unit;
+    //         k++) {
+    //           tcol[k] = sg.shuffle(brow[n], k);
+    //         }
+    //       }
+    //     }
+    //   }
+
+    if (sgId == 0) {
+      for (uint k = 0; k < shuffle_unit; k++) {
+        tcol[k] = sg.shuffle(brow[0], k);
+      }
+    }
+    if (sgId == 1) {
+      for (uint k = 0; k < shuffle_unit; k++) {
+        tcol[k] = sg.shuffle(brow[1], k);
+      }
+    }
+    if (sgId == 2) {
+      for (uint k = 0; k < shuffle_unit; k++) {
+        tcol[k] = sg.shuffle(brow[2], k);
+      }
+    }
+    if (sgId == 3) {
+      for (uint k = 0; k < shuffle_unit; k++) {
+        tcol[k] = sg.shuffle(brow[3], k);
+      }
+    }
+
+    for (uint k = 0; k < shuffle_unit; k++) {
+      sg.store(At_.get_pointer() + aj + (ai + k) * ldat_, tcol[k]);
+      // sg.store(At_.get_pointer() + aj + (ai + k) * ldat_, element_t(sgIdxG));
+    }
+  }
+}
+
+template <bool in_place, int wg_size, int shuffle_unit, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE bool
+TransposeShuffle<in_place, wg_size, shuffle_unit, in_t, out_t,
+                 element_t>::valid_thread(cl::sycl::nd_item<1> item) const {
+  index_t idx = item.get_global_linear_id();
+  return (idx < get_size());
+}
+
+template <bool in_place, int wg_size, int shuffle_unit, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE void
+TransposeShuffle<in_place, wg_size, shuffle_unit, in_t, out_t, element_t>::bind(
+    cl::sycl::handler &cgh) {
+  A_.bind(cgh);
+  At_.bind(cgh);
+}
+
+template <bool in_place, int wg_size, int shuffle_unit, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE typename in_t::index_t TransposeShuffle<
+    in_place, wg_size, shuffle_unit, in_t, out_t, element_t>::get_size() const {
+  // Smallest TileSize square-multiple containing input/output matrices times
+  // batch_size
+  return (M_ * N_ * batch_size_ / wg_size);
+}
+
+template <bool in_place, int wg_size, int shuffle_unit, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE void
+TransposeShuffle<in_place, wg_size, shuffle_unit, in_t, out_t,
+                 element_t>::adjust_access_displacement() {
+  A_.adjust_access_displacement();
+  At_.adjust_access_displacement();
+}
+
 /*!
  *@brief get_indices. This function is used in the local-memory kernel to
  *compute local & global input & output indices.
@@ -148,6 +249,7 @@ Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
  * @param jl [output] the local col-index
  *
  */
+
 template <bool in_place, int Tile_size, int wg_size, int cl_size,
           bool local_memory, typename in_t, typename out_t, typename element_t>
 PORTBLAS_INLINE void

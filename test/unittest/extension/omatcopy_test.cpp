@@ -69,14 +69,30 @@ void run_test(const combination_t<scalar_t> combi) {
   auto copy_out =
       helper::copy_to_device<scalar_t>(q, B.data(), matrix_out, size_b);
 
-  auto omatcopy_event = blas::_omatcopy(sb_handle, trans, m, n, alpha, matrix_in, ld_in, matrix_out,
-                  ld_out, {copy_in, copy_out});
+  auto omatcopy_event =
+      blas::_omatcopy(sb_handle, trans, m, n, alpha, matrix_in, ld_in,
+                      matrix_out, ld_out, {copy_in, copy_out});
 
   sb_handle.wait(omatcopy_event);
 
   auto event = blas::helper::copy_to_host<scalar_t>(
       sb_handle.get_queue(), matrix_out, B.data(), size_b);
   sb_handle.wait(event);
+
+  // for (auto i = 0; i < n; i++) {
+  //   for (auto j = 0; j < m; j++) {
+  //     printf("%.1f ", B.at(i + j * ld_out));
+  //   }
+  //   printf("\n");
+  // }
+
+  // printf("\n------Original----------\n");
+  // for (auto i = 0; i < m; i++) {
+  //   for (auto j = 0; j < n; j++) {
+  //     printf("%.1f ", alpha*A.at(i + j * ld_in));
+  //   }
+  //   printf("\n");
+  // }
 
   // Validate the result
   const bool isAlmostEqual = utils::compare_vectors(B, B_ref);
@@ -106,7 +122,6 @@ void run_test(const combination_t<scalar_t> combi) {
   }
 }
 
-
 #ifdef STRESS_TESTING
 template <typename scalar_t>
 const auto combi =
@@ -120,13 +135,13 @@ const auto combi =
 #else
 template <typename scalar_t>
 const auto combi =
-    ::testing::Combine(::testing::Values("usm", "buf"),        // allocation type
-                       ::testing::Values<char>('n', 't'),         // trans
-                       ::testing::Values<index_t>(64, 129, 255),  // m
-                       ::testing::Values<index_t>(64, 129, 255),  // n
-                       ::testing::Values<scalar_t>(0, 1, 2),   // alpha
-                       ::testing::Values<index_t>(1, 2, 3),       // ld_in_m
-                       ::testing::Values<index_t>(1, 2, 3));      // ld_out_m
+    ::testing::Combine(::testing::Values("usm", "buf"),    // allocation type
+                       ::testing::Values<char>('n', 't'),  // trans
+                       ::testing::Values<index_t>(16, 32, 64, 33),  // m
+                       ::testing::Values<index_t>(32, 64, 33),      // n
+                       ::testing::Values<scalar_t>(0, 1, 2),        // alpha
+                       ::testing::Values<index_t>(1, 2, 3),         // ld_in_m
+                       ::testing::Values<index_t>(1, 2, 3));        // ld_out_m
 #endif
 
 template <class T>

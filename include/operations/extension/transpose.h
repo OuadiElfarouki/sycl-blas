@@ -128,6 +128,66 @@ class Transpose {
                    index_t &i, index_t &j);
 };
 
+template <bool in_place, int wg_size, int shuffle_unit, typename in_t,
+          typename out_t, typename element_t>
+class TransposeShuffle {
+ public:
+  using index_t = typename in_t::index_t;
+  using value_t = element_t;
+  in_t A_;
+  out_t At_;
+  index_t N_;
+  index_t M_;
+  value_t alpha_;
+  // Leading dimensions
+  index_t lda_;
+  index_t ldat_;
+  // Increment value (denoted stride in oneMKL specification)
+  index_t inc_a_;
+  index_t inc_at_;
+  // Stride values (denoted stride in oneMKL specification for batched
+  // operations)
+  index_t stride_a_;
+  index_t stride_at_;
+  // Minimum number of tiles used to cover matrices rows & columns
+  index_t tile_count_m_;
+  index_t tile_count_n_;
+
+  static const index_t shuffles_per_wg_ = wg_size / shuffle_unit;
+
+  // Total number of tiles used to cover the matrix
+  index_t tile_count_total_;
+
+  // Batch size when using batched transpose
+  index_t batch_size_;
+
+  TransposeShuffle(in_t &A, index_t &inc_a, index_t &stride_a, out_t &At,
+                   index_t &inc_at, index_t &stride_at, value_t &alpha,
+                   index_t &batch_size)
+      : A_(A),
+        At_(At),
+        lda_(A_.getSizeL()),
+        ldat_(At_.getSizeL()),
+        M_(A_.get_size_row()),
+        N_(A_.get_size_col()),
+        alpha_(alpha),
+        tile_count_m_((M_ - 1) / wg_size + 1),
+        tile_count_n_((N_ - 1) / wg_size + 1),
+        tile_count_total_(tile_count_m_ * tile_count_n_),
+        inc_a_(inc_a),
+        stride_a_(stride_a),
+        stride_at_(stride_at),
+        inc_at_(inc_at),
+        batch_size_(batch_size) {}
+
+  index_t get_size() const;
+
+  bool valid_thread(cl::sycl::nd_item<1> item) const;
+  void bind(cl::sycl::handler &cgh);
+  void adjust_access_displacement();
+  void eval(cl::sycl::nd_item<1> item);
+};
+
 /*!
  @brief Generator/factory for Transpose trees.
  */
@@ -141,6 +201,20 @@ make_transpose(in_t &A, index_t inc_a, index_t &stride_a, out_t &At,
                index_t &batch_size) {
   return Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t,
                    out_t, element_t>(A, inc_a, stride_a, At, inc_a_t, stride_at,
+                                     alpha, batch_size);
+}
+
+/*!
+ @brief Generator/factory for Transpose Shuffle trees.
+ */
+template <bool in_place, int wg_size, int shuffle_unit, typename in_t,
+          typename out_t, typename element_t, typename index_t>
+TransposeShuffle<in_place, wg_size, shuffle_unit, in_t, out_t, element_t>
+make_transpose_shuffle(in_t &A, index_t inc_a, index_t &stride_a, out_t &At,
+                       index_t inc_a_t, index_t &stride_at, element_t &alpha,
+                       index_t &batch_size) {
+  return TransposeShuffle<in_place, wg_size, shuffle_unit, in_t, out_t,
+                          element_t>(A, inc_a, stride_a, At, inc_a_t, stride_at,
                                      alpha, batch_size);
 }
 

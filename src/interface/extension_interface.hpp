@@ -63,32 +63,83 @@ typename sb_handle_t::event_t _transpose_outplace_impl(
     container_0_t in_, index_t _ld_in, index_t _inc_in, index_t _stride_in,
     container_1_t out_, index_t _ld_out, index_t _inc_out, index_t _stride_out,
     index_t _batch_size, const typename sb_handle_t::event_t& _dependencies) {
-  constexpr const index_t num_line_elems =
-      std::max(Tile_size, static_cast<int>(cl_size / sizeof(element_t)));
-  constexpr const index_t num_tiles_per_line = num_line_elems / Tile_size;
-
   // Matrix Views
   auto in_view = make_matrix_view<col_major>(in_, _M, _N, _ld_in);
   auto out_view = make_matrix_view<col_major>(out_, _M, _N, _ld_out);
 
-  // Work items & groups sizes
-  index_t n_wg = ((_M - 1) / Tile_size + 1) * ((_N - 1) / Tile_size + 1);
-  index_t global_size = n_wg * wg_size * _batch_size;
-
-  // Transpose expression Tree
-  auto trans_scale_tree =
-      make_transpose<false, Tile_size, wg_size, cl_size, local_memory>(
-          in_view, _inc_in, _stride_in, out_view, _inc_out, _stride_out, _alpha,
-          _batch_size);
-
   if constexpr (local_memory) {
+    constexpr const index_t num_line_elems =
+        std::max(Tile_size, static_cast<int>(cl_size / sizeof(element_t)));
+    constexpr const index_t num_tiles_per_line = num_line_elems / Tile_size;
+    // Work items& groups sizes
+    index_t n_wg = ((_M - 1) / Tile_size + 1) * ((_N - 1) / Tile_size + 1);
+    index_t global_size = n_wg * wg_size * _batch_size;
+    // Transpose expression Tree
+    auto trans_scale_tree =
+        make_transpose<false, Tile_size, wg_size, cl_size, local_memory>(
+            in_view, _inc_in, _stride_in, out_view, _inc_out, _stride_out,
+            _alpha, _batch_size);
     index_t local_mem = static_cast<index_t>((num_line_elems + 1) * Tile_size /
                                              num_tiles_per_line);
     return sb_handle.execute(trans_scale_tree, static_cast<index_t>(wg_size),
                              global_size, local_mem, _dependencies);
   } else {
-    return sb_handle.execute(trans_scale_tree, static_cast<index_t>(wg_size),
+    // // Work items & groups sizes
+    // index_t global_size = (_M * _N / Tile_size) * _batch_size;
+    // // Transpose expression Tree
+    // auto trans_scale_non_local = make_transpose_shuffle<false, Tile_size>(
+    //     in_view, _inc_in, _stride_in, out_view, _inc_out, _stride_out,
+    //     _alpha, _batch_size);
+    // return sb_handle.execute(trans_scale_non_local,
+    //                          static_cast<index_t>(wg_size), global_size,
+    //                          _dependencies);
+    printf("no not heere >>>>>>>>>>>>>>>>>>>>>>> \n");
+    return (_dependencies);
+  }
+}
+
+template <typename sb_handle_t, typename container_0_t, typename container_1_t,
+          typename element_t, typename index_t>
+typename sb_handle_t::event_t _transpose_outplace_impl_shuffle(
+    sb_handle_t& sb_handle, index_t _M, index_t _N, element_t _alpha,
+    container_0_t in_, index_t _ld_in, index_t _inc_in, index_t _stride_in,
+    container_1_t out_, index_t _ld_out, index_t _inc_out, index_t _stride_out,
+    index_t _batch_size, const typename sb_handle_t::event_t& _dependencies) {
+  // Matrix Views
+  auto in_view = make_matrix_view<col_major>(in_, _M, _N, _ld_in);
+  auto out_view = make_matrix_view<col_major>(out_, _M, _N, _ld_out);
+
+  // Work items & groups sizes
+  // Transpose expression Tree
+  auto q = sb_handle.get_queue();
+  const index_t min_sg_size = static_cast<index_t>(
+      q.get_device()
+          .template get_info<sycl::info::device::sub_group_sizes>()[0]);
+
+  // CPU Case typical
+  if (min_sg_size == 4) {
+    constexpr const index_t wg_size = 8;
+    constexpr const index_t sg_size = 4;
+
+    index_t global_size = (_M * _N / wg_size) * _batch_size;
+
+    auto trans_scale_non_local =
+        make_transpose_shuffle<false, wg_size, sg_size>(
+            in_view, _inc_in, _stride_in, out_view, _inc_out, _stride_out,
+            _alpha, _batch_size);
+    return sb_handle.execute(trans_scale_non_local,
+                             static_cast<index_t>(wg_size), global_size,
+                             _dependencies);
+  } else if (min_sg_size == 8) {
+    index_t global_size = (_M * _N / 16) * _batch_size;
+
+    auto trans_scale_non_local = make_transpose_shuffle<false, 16, 8>(
+        in_view, _inc_in, _stride_in, out_view, _inc_out, _stride_out, _alpha,
+        _batch_size);
+    return sb_handle.execute(trans_scale_non_local, static_cast<index_t>(16),
                              global_size, _dependencies);
+  } else {
+    return _dependencies;
   }
 }
 
@@ -433,7 +484,7 @@ typename sb_handle_t::event_t _matcopy(
   if (trans == 't') {
     return _matcopy_impl<in_place, true>(
         sb_handle, m, n, alpha, in_memory, ld_in, inc_in, stride, out_memory,
-        ld_out, inc_out, stride, index_t(1), _dependencies);
+        ld_out, inc_out, stride, batch_size, _dependencies);
   } else {
     return _matcopy_impl<in_place, false>(
         sb_handle, m, n, alpha, in_memory, ld_in, inc_in, stride, out_memory,
