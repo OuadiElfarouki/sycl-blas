@@ -50,8 +50,8 @@ namespace blas {
  * @tparam element_t The scaling factor type
  *
  */
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t>
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t>
 class Transpose {
  public:
   using index_t = typename in_t::index_t;
@@ -90,7 +90,7 @@ class Transpose {
   // Number of contiguous elements to be used in local memory to avoid bank
   // conflicts
   static constexpr index_t get_non_bank_conflict_line_size() {
-    return std::max(Tile_size, static_cast<int>(cl_size / sizeof(element_t)));
+    return std::max(Tile_size, static_cast<int>(64 / sizeof(element_t)));
   }
   // The number of Tiles in a contiguous local memory line (used to avoid bank
   // conflicts)
@@ -139,17 +139,14 @@ class Transpose {
 /*!
  @brief Generator/factory for Transpose trees.
  */
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t,
-          typename index_t>
-Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
-          element_t>
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t, typename index_t>
+Transpose<Tile_size, wg_size, local_memory, in_t, out_t, element_t>
 make_transpose(in_t &A, index_t inc_a, index_t &stride_a, out_t &At,
                index_t inc_a_t, index_t &stride_at, element_t &alpha,
                index_t &batch_size) {
-  return Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t,
-                   out_t, element_t>(A, inc_a, stride_a, At, inc_a_t, stride_at,
-                                     alpha, batch_size);
+  return Transpose<Tile_size, wg_size, local_memory, in_t, out_t, element_t>(
+      A, inc_a, stride_a, At, inc_a_t, stride_at, alpha, batch_size);
 }
 
 /*!

@@ -38,11 +38,11 @@ typename sb_handle_t::event_t _transpose_outplace(
     container_1_t out_, index_t _ld_out, index_t _inc_out, index_t _stride_out,
     index_t _batch_size, const typename sb_handle_t::event_t& _dependencies) {
   if (_M * _N < (1 << 16)) {
-    return blas::internal::_transpose_outplace_impl<16, 64, 64, false>(
+    return blas::internal::_transpose_outplace_impl<16, 64, false>(
         sb_handle, _M, _N, _alpha, in_, _ld_in, _inc_in, _stride_in, out_,
         _ld_out, _inc_out, _stride_out, _batch_size, _dependencies);
   } else {
-    return blas::internal::_transpose_outplace_impl<32, 32, 64, false>(
+    return blas::internal::_transpose_outplace_impl<32, 32, false>(
         sb_handle, _M, _N, _alpha, in_, _ld_in, _inc_in, _stride_in, out_,
         _ld_out, _inc_out, _stride_out, _batch_size, _dependencies);
   }

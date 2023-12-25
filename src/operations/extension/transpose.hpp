@@ -30,39 +30,37 @@
 namespace blas {
 
 // Transpose
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t>
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t>
 PORTBLAS_INLINE bool
-Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
+Transpose<Tile_size, wg_size, local_memory, in_t, out_t,
           element_t>::valid_thread(cl::sycl::nd_item<1> item) const {
   index_t idx = item.get_global_linear_id();
   return (idx < get_size());
 }
 
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t>
-PORTBLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
-          element_t>::bind(cl::sycl::handler &cgh) {
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE void Transpose<Tile_size, wg_size, local_memory, in_t, out_t,
+                               element_t>::bind(cl::sycl::handler &cgh) {
   A_.bind(cgh);
   At_.bind(cgh);
 }
 
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t>
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t>
 PORTBLAS_INLINE typename in_t::index_t
-Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
-          element_t>::get_size() const {
+Transpose<Tile_size, wg_size, local_memory, in_t, out_t, element_t>::get_size()
+    const {
   // Smallest TileSize square-multiple containing input/output matrices times
   // batch_size
   return (size_pad_ * batch_size_);
 }
 
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t>
-PORTBLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
-          element_t>::adjust_access_displacement() {
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE void Transpose<Tile_size, wg_size, local_memory, in_t, out_t,
+                               element_t>::adjust_access_displacement() {
   A_.adjust_access_displacement();
   At_.adjust_access_displacement();
 }
@@ -77,12 +75,13 @@ Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
  * @param i [output] the global row-index
  * @param j [output] the global col-index
  */
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t>
-PORTBLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
-          element_t>::get_indices(cl::sycl::nd_item<1> id, index_t &in_idx,
-                                  index_t &out_idx, index_t &i, index_t &j) {
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE void Transpose<Tile_size, wg_size, local_memory, in_t, out_t,
+                               element_t>::get_indices(cl::sycl::nd_item<1> id,
+                                                       index_t &in_idx,
+                                                       index_t &out_idx,
+                                                       index_t &i, index_t &j) {
   index_t idg = id.get_group(0);
   index_t idc = id.get_local_id(0);
 
@@ -110,11 +109,10 @@ Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
             il * ldat_ + ibatch * stride_at_;
 }
 
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t>
-PORTBLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
-          element_t>::eval(cl::sycl::nd_item<1> id) {
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE void Transpose<Tile_size, wg_size, local_memory, in_t, out_t,
+                               element_t>::eval(cl::sycl::nd_item<1> id) {
   index_t idx = id.get_global_linear_id();
 
   index_t in_index, out_index, i_id, j_id;
@@ -148,16 +146,18 @@ Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
  * @param jl [output] the local col-index
  *
  */
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t>
-PORTBLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
-          element_t>::get_indices(cl::sycl::nd_item<1> id, index_t &in_idx,
-                                  index_t &in_local_idx, index_t &out_idx,
-                                  index_t &out_local_idx,
-                                  index_t &i_block_start,
-                                  index_t &j_block_start, index_t &il,
-                                  index_t &jl) {
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t>
+PORTBLAS_INLINE void Transpose<Tile_size, wg_size, local_memory, in_t, out_t,
+                               element_t>::get_indices(cl::sycl::nd_item<1> id,
+                                                       index_t &in_idx,
+                                                       index_t &in_local_idx,
+                                                       index_t &out_idx,
+                                                       index_t &out_local_idx,
+                                                       index_t &i_block_start,
+                                                       index_t &j_block_start,
+                                                       index_t &il,
+                                                       index_t &jl) {
   index_t idg = id.get_group(0);
   index_t idc = id.get_local_id(0);
 
@@ -188,12 +188,12 @@ Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
   out_local_idx = il * Tile_size + jl + il / get_num_tiles_per_line();
 }
 
-template <bool in_place, int Tile_size, int wg_size, int cl_size,
-          bool local_memory, typename in_t, typename out_t, typename element_t>
+template <int Tile_size, int wg_size, bool local_memory, typename in_t,
+          typename out_t, typename element_t>
 template <typename local_memory_t>
-PORTBLAS_INLINE void
-Transpose<in_place, Tile_size, wg_size, cl_size, local_memory, in_t, out_t,
-          element_t>::eval(local_memory_t local_mem, cl::sycl::nd_item<1> id) {
+PORTBLAS_INLINE void Transpose<Tile_size, wg_size, local_memory, in_t, out_t,
+                               element_t>::eval(local_memory_t local_mem,
+                                                cl::sycl::nd_item<1> id) {
   value_t *local = local_mem.localAcc.get_pointer();
   auto A = A_.get_pointer();
   auto At = At_.get_pointer();

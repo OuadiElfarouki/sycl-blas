@@ -55,16 +55,16 @@ struct get_second_step_op<MeanOperator> {
 /**
  * @brief Wrapping implementation of outplace transpose kernel.
  */
-template <int Tile_size, int wg_size, int cl_size, bool local_memory,
-          typename sb_handle_t, typename container_0_t, typename container_1_t,
-          typename element_t, typename index_t>
+template <int Tile_size, int wg_size, bool local_memory, typename sb_handle_t,
+          typename container_0_t, typename container_1_t, typename element_t,
+          typename index_t>
 typename sb_handle_t::event_t _transpose_outplace_impl(
     sb_handle_t& sb_handle, index_t _M, index_t _N, element_t _alpha,
     container_0_t in_, index_t _ld_in, index_t _inc_in, index_t _stride_in,
     container_1_t out_, index_t _ld_out, index_t _inc_out, index_t _stride_out,
     index_t _batch_size, const typename sb_handle_t::event_t& _dependencies) {
   constexpr const index_t num_line_elems =
-      std::max(Tile_size, static_cast<int>(cl_size / sizeof(element_t)));
+      std::max(Tile_size, static_cast<int>(64 / sizeof(element_t)));
   constexpr const index_t num_tiles_per_line = num_line_elems / Tile_size;
 
   // Matrix Views
@@ -76,10 +76,9 @@ typename sb_handle_t::event_t _transpose_outplace_impl(
   index_t global_size = n_wg * wg_size * _batch_size;
 
   // Transpose expression Tree
-  auto trans_scale_tree =
-      make_transpose<false, Tile_size, wg_size, cl_size, local_memory>(
-          in_view, _inc_in, _stride_in, out_view, _inc_out, _stride_out, _alpha,
-          _batch_size);
+  auto trans_scale_tree = make_transpose<Tile_size, wg_size, local_memory>(
+      in_view, _inc_in, _stride_in, out_view, _inc_out, _stride_out, _alpha,
+      _batch_size);
 
   if constexpr (local_memory) {
     index_t local_mem = static_cast<index_t>((num_line_elems + 1) * Tile_size /
