@@ -731,8 +731,7 @@ else() # default cpu backend
         "half" 64 "false" "false" "false"
         64 2 2 4 4 1 1 1 1 4 4 1 1 1 float float "no_local" "standard" "full" 4 "interleaved" "false" "false")
     endif()
-
-    endforeach()
+  endforeach()
 
   if(BLAS_ENABLE_COMPLEX)
     # Extract list of complex<data> for each data in supported_types

@@ -113,7 +113,6 @@ option(BLAS_ENABLE_EXTENSIONS "Whether to enable portBLAS extensions" ON)
 option(BLAS_ENABLE_COMPLEX "Whether to enable complex data type for GEMM" OFF)
 option(BLAS_ENABLE_HALF "Whether to enable sycl::half data type for supported operators" OFF)
 
-
 if (SYCL_COMPILER MATCHES "adaptivecpp") 
   if(BLAS_ENABLE_COMPLEX)
     message(STATUS "SYCL Complex data is not supported on AdaptiveCpp/hipSYCL. Complex
