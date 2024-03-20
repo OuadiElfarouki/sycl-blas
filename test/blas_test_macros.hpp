@@ -106,6 +106,43 @@
   TEST_P(class_name##Float, test) { test_function(GetParam()); };             \
   INSTANTIATE_TEST_SUITE_P(test_suite, class_name##Float, combination<float>, \
                            name_generator<float>);
+
+/** Registers test for the sycl::ext::oneapi::bfloat16 type
+ * @see BLAS_REGISTER_TEST_CUSTOM_NAME
+ */
+#define BLAS_REGISTER_TEST_BFLOAT16_CUSTOM_NAME(test_suite, class_name,       \
+                                                test_function, combination_t, \
+                                                combination, name_generator)  \
+  class class_name##Bfloat16                                                  \
+      : public ::testing::TestWithParam<                                      \
+            combination_t<cl::sycl::ext::oneapi::bfloat16>> {};               \
+  TEST_P(class_name##Bfloat16, test) {                                        \
+    test_function<cl::sycl::ext::oneapi::bfloat16>(GetParam());               \
+  };                                                                          \
+  INSTANTIATE_TEST_SUITE_P(test_suite, class_name##Bfloat16,                  \
+                           combination<cl::sycl::ext::oneapi::bfloat16>,      \
+                           name_generator<cl::sycl::ext::oneapi::bfloat16>);
+
+/** Registers test for the sycl::ext::oneapi::bfloat16 input type & float output
+ * type
+ * @see BLAS_REGISTER_GEMM_TEST_CUSTOM_NAME
+ */
+#define BLAS_REGISTER_TEST_BFLOAT16_FLOAT_CUSTOM_NAME(                        \
+    test_suite, class_name, test_function, combination_t, combination,        \
+    name_generator)                                                           \
+  class class_name##Bfloat16                                                  \
+      : public ::testing::TestWithParam<                                      \
+            combination_t<cl::sycl::ext::oneapi::bfloat16>> {};               \
+  TEST_P(class_name##Bfloat16, test) { test_function(GetParam()); };          \
+  INSTANTIATE_TEST_SUITE_P(test_suite, class_name##Bfloat16,                  \
+                           combination<cl::sycl::ext::oneapi::bfloat16>,      \
+                           name_generator<cl::sycl::ext::oneapi::bfloat16>);  \
+                                                                              \
+  class class_name##Float                                                     \
+      : public ::testing::TestWithParam<combination_t<float>> {};             \
+  TEST_P(class_name##Float, test) { test_function(GetParam()); };             \
+  INSTANTIATE_TEST_SUITE_P(test_suite, class_name##Float, combination<float>, \
+                           name_generator<float>);
 #else
 #define BLAS_REGISTER_TEST_HALF_CUSTOM_NAME(test_suite, class_name,       \
                                             test_function, combination_t, \
@@ -114,6 +151,15 @@
 #define BLAS_REGISTER_TEST_HALF_FLOAT_CUSTOM_NAME(                     \
     test_suite, class_name, test_function, combination_t, combination, \
     name_generator)
+
+#define BLAS_REGISTER_TEST_BFLOAT16_CUSTOM_NAME(test_suite, class_name,       \
+                                                test_function, combination_t, \
+                                                combination, name_generator)
+
+#define BLAS_REGISTER_TEST_BFLOAT16_FLOAT_CUSTOM_NAME(                 \
+    test_suite, class_name, test_function, combination_t, combination, \
+    name_generator)
+
 #endif  // BLAS_ENABLE_HALF
 
 #ifdef BLAS_ENABLE_COMPLEX

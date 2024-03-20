@@ -114,7 +114,9 @@ struct AbsoluteValue {
   template <typename value_t>
   using is_floating_point = std::integral_constant<
       bool, std::is_floating_point<stripped_t<value_t>>::value ||
-                std::is_same<stripped_t<value_t>, cl::sycl::half>::value>;
+                std::is_same<stripped_t<value_t>, cl::sycl::half>::value ||
+                std::is_same<stripped_t<value_t>,
+                             sycl::ext::oneapi::bfloat16>::value>;
 #else
   template <typename value_t>
   using is_floating_point = std::is_floating_point<value_t>;
@@ -225,7 +227,7 @@ struct SquareOperator : public Operators {
 struct AddOperator : public Operators {
   template <typename lhs_t, typename rhs_t>
   static PORTBLAS_INLINE typename StripASP<rhs_t>::type eval(const lhs_t &l,
-                                                              const rhs_t &r) {
+                                                             const rhs_t &r) {
     return (l + r);
   }
 
@@ -244,7 +246,7 @@ struct AddOperator : public Operators {
 struct ProductOperator : public Operators {
   template <typename lhs_t, typename rhs_t>
   static PORTBLAS_INLINE typename StripASP<rhs_t>::type eval(const lhs_t &l,
-                                                              const rhs_t &r) {
+                                                             const rhs_t &r) {
     return (l * r);
   }
 
@@ -263,7 +265,7 @@ struct ProductOperator : public Operators {
 struct DivisionOperator : public Operators {
   template <typename lhs_t, typename rhs_t>
   static PORTBLAS_INLINE typename StripASP<rhs_t>::type eval(const lhs_t &l,
-                                                              const rhs_t &r) {
+                                                             const rhs_t &r) {
     return (l / r);
   }
 
@@ -301,7 +303,7 @@ struct MeanOperator : public Operators {
 struct MaxOperator : public Operators {
   template <typename lhs_t, typename rhs_t>
   static PORTBLAS_INLINE typename StripASP<rhs_t>::type eval(const lhs_t &l,
-                                                              const rhs_t &r) {
+                                                             const rhs_t &r) {
     return ((l > r) ? l : r);
   }
 
@@ -320,7 +322,7 @@ struct MaxOperator : public Operators {
 struct MinOperator : public Operators {
   template <typename lhs_t, typename rhs_t>
   static PORTBLAS_INLINE typename StripASP<rhs_t>::type eval(const lhs_t &l,
-                                                              const rhs_t &r) {
+                                                             const rhs_t &r) {
     return ((l < r) ? l : r);
   }
 
@@ -339,7 +341,7 @@ struct MinOperator : public Operators {
 struct AbsoluteAddOperator : public Operators {
   template <typename lhs_t, typename rhs_t>
   static PORTBLAS_INLINE typename StripASP<rhs_t>::type eval(const lhs_t &l,
-                                                              const rhs_t &r) {
+                                                             const rhs_t &r) {
     return AbsoluteValue::eval(l) + AbsoluteValue::eval(r);
   }  // namespace blas
 
@@ -358,7 +360,7 @@ struct AbsoluteAddOperator : public Operators {
 struct IMaxOperator : public Operators {
   template <typename lhs_t, typename rhs_t>
   static PORTBLAS_INLINE typename StripASP<rhs_t>::type eval(const lhs_t &l,
-                                                              const rhs_t &r) {
+                                                             const rhs_t &r) {
     if (AbsoluteValue::eval(
             static_cast<typename StripASP<lhs_t>::type>(l).get_value()) <
             AbsoluteValue::eval(
@@ -384,7 +386,7 @@ struct IMaxOperator : public Operators {
 struct IMinOperator : public Operators {
   template <typename lhs_t, typename rhs_t>
   static PORTBLAS_INLINE typename StripASP<rhs_t>::type eval(const lhs_t &l,
-                                                              const rhs_t &r) {
+                                                             const rhs_t &r) {
     if (AbsoluteValue::eval(
             static_cast<typename StripASP<lhs_t>::type>(l).get_value()) >
             AbsoluteValue::eval(

@@ -515,7 +515,9 @@ class Gemm<input_t, output_t, /* DoubleBuffer = */ false, /* NbcA = */ false,
                                      *reg_res);
           }
 #else
-          if constexpr (std::is_same_v<element_in_t, element_out_t>) {
+          if constexpr (std::is_same_v<element_in_t, element_out_t> &&
+                        !std::is_same_v<element_in_t,
+                                        cl::sycl::ext::oneapi::bfloat16>) {
             *reg_res = cl::sycl::mad(reg_a[j * (item_batchs / VectorSize) + b],
                                      reg_b[i * (item_batchs / VectorSize) + b],
                                      *reg_res);

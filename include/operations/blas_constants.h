@@ -212,6 +212,48 @@ struct constant<complex_sycl<value_t>, Indicator> {
 };
 #endif
 
+// Bfloat16
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::zero>
+    : constant<float, const_val::zero> {};
+
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::one>
+    : constant<float, const_val::one> {};
+
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::m_one>
+    : constant<float, const_val::m_one> {};
+
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::two>
+    : constant<float, const_val::two> {};
+
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::m_two>
+    : constant<float, const_val::m_two> {};
+
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::max>
+    : constant<float, const_val::max> {};
+
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::min>
+    : constant<float, const_val::min> {};
+
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::abs_max>
+    : constant<float, const_val::abs_max> {};
+
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::abs_min>
+    : constant<float, const_val::abs_min> {};
+
+template <>
+struct constant<cl::sycl::ext::oneapi::bfloat16, const_val::collapse>
+    : constant<float, const_val::collapse> {};
+
+// Half
 template <>
 struct constant<cl::sycl::half, const_val::zero>
     : constant<float, const_val::zero> {};

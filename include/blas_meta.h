@@ -194,6 +194,9 @@ template <>
 struct is_sycl_scalar<cl::sycl::half> : std::true_type {};
 
 template <>
+struct is_sycl_scalar<cl::sycl::ext::oneapi::bfloat16> : std::true_type {};
+
+template <>
 struct is_sycl_scalar<float *> : std::false_type {};
 
 template <>
@@ -201,7 +204,9 @@ struct is_sycl_scalar<double *> : std::false_type {};
 
 template <class type>
 struct is_half
-    : std::integral_constant<bool, std::is_same_v<type, cl::sycl::half>> {};
+    : std::integral_constant<
+          bool, std::is_same_v<type, cl::sycl::half> ||
+                    std::is_same_v<type, cl::sycl::ext::oneapi::bfloat16>> {};
 
 #ifdef BLAS_ENABLE_COMPLEX
 // SYCL Complex type alias

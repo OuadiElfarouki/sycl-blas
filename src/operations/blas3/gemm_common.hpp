@@ -47,7 +47,10 @@ static PORTBLAS_INLINE Tout
 mul_add(Tin a, Tin b, Tout c,
         typename std::enable_if<std::is_same<Tin, Tout>::value &&
                                 is_sycl_scalar<Tin>::value>::type * = 0) {
-  return (cl::sycl::mad(a, b, c));
+  if constexpr (std::is_same_v<Tin, cl::sycl::ext::oneapi::bfloat16>)
+    return a * b + c;
+  else
+    return (cl::sycl::mad(a, b, c));
 }
 
 template <typename Tin, typename Tout>

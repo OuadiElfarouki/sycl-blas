@@ -84,6 +84,15 @@ struct DetectScalar<double> {
  * @brief See Detect Scalar.
  */
 template <>
+struct DetectScalar<cl::sycl::ext::oneapi::bfloat16> {
+  using element_t = sycl::ext::oneapi::bfloat16;
+  static element_t get_scalar(element_t &scalar) { return scalar; }
+};
+
+/*! DetectScalar.
+ * @brief See Detect Scalar.
+ */
+template <>
 struct DetectScalar<cl::sycl::half> {
   using element_t = cl::sycl::half;
   static element_t get_scalar(element_t &scalar) { return scalar; }
